@@ -72,8 +72,11 @@ def generate(case:Case=Depends(get_case),db:Session=Depends(get_db),settings:Set
             input_ref={"case_id":case.id,"scenario_id":scenario.id,"video_sha256":video.sha256,"frames":[f.frame_no for f in frames]},response_format={"type":"json_object"},max_tokens=1800,extra_body=_extra(settings))
         narrative=fa.parse_narrative(first.content,duration_ms=vm.duration_ms,allowed_times=allowed_times,allowed_tracks=allowed_tracks); client.record_validation(db,first.call_id,True)
         main_tracks=[x for e in narrative["events"] for x in e["track_ids"]]; main_track=main_tracks[0] if main_tracks else next(iter(allowed_tracks))
-        second=client.chat(db,case=case,model=settings.featherless_text_model,messages=[{"role":"system","content":fa.OBD_PROMPT},{"role":"user","content":json.dumps({"duration_ms":vm.duration_ms,"vehicle_track_id":main_track,"narrative":narrative})}],purpose="simulated_obd_generation",
-            input_ref={"case_id":case.id,"narrative":narrative},response_format={"type":"json_object"},max_tokens=2200,extra_body=_extra(settings))
+        obd_times=list(range(0,vm.duration_ms+1,1000))
+        if obd_times[-1] != vm.duration_ms: obd_times.append(vm.duration_ms)
+        obd_input={"duration_ms":vm.duration_ms,"vehicle_track_id":main_track,"required_timestamps_ms":obd_times,"narrative":narrative}
+        second=client.chat(db,case=case,model=settings.featherless_text_model,messages=[{"role":"system","content":fa.OBD_PROMPT},{"role":"user","content":json.dumps(obd_input)}],purpose="simulated_obd_generation",
+            input_ref={"case_id":case.id,"obd_input":obd_input},response_format={"type":"json_object"},max_tokens=1600,extra_body=_extra(settings))
         obd=fa.parse_obd(second.content,duration_ms=vm.duration_ms,allowed_tracks=allowed_tracks); client.record_validation(db,second.call_id,True)
         witnesses=[]
         for witness in db.execute(select(Witness).where(Witness.case_id==case.id)).scalars():

@@ -1,7 +1,7 @@
 import { ChapterStrip, ThisMoment, storyChapters } from '../components/ReconstructionStory';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Alert, Badge, Button, Checkbox, Drawer, ErrorState, IconButton, LoadingState, SectionHeader, Select, Tabs, useToast } from '../ui-kit';
+import { Alert, Badge, Button, Checkbox, Drawer, ErrorState, IconButton, LoadingState, ProgressBar, SectionHeader, Select, Tabs, useToast } from '../ui-kit';
 import { FileText, Film, Gauge, PanelLeftClose, PanelLeftOpen, Sparkles, Users } from 'lucide-react';
 import Shell from '../layout';
 import { api } from '../api';
@@ -101,6 +101,7 @@ export default function Workspace() {
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [labelBusy, setLabelBusy] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
+  const [aiElapsed, setAiElapsed] = useState(0);
   const showInspector = (id) => { setTab(id); setAdvancedOpen(true); };
   const [scenarios, setScenarios] = useState([]);
   const [scenarioId, setScenarioId] = useState(null);
@@ -148,6 +149,13 @@ export default function Workspace() {
     } catch (e) { setErr(e); }
   }, [caseId]);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (!aiBusy) return undefined;
+    const started = Date.now();
+    setAiElapsed(0);
+    const timer = window.setInterval(() => setAiElapsed(Math.floor((Date.now() - started) / 1000)), 1000);
+    return () => window.clearInterval(timer);
+  }, [aiBusy]);
 
   const baseEvents = useMemo(() => (data?.tl ? Object.values(data.tl.lanes).flat().sort(byStart) : []), [data]);
   const aiAnalysis = data?.ai?.analysis;
@@ -302,6 +310,8 @@ export default function Workspace() {
   const findingMarkers = aiFindings.filter((f) => f.timestamp_ms != null).map((f) => ({ id: f.id, source_id: aiAnalysis.evidence_id, start_ms: f.timestamp_ms, end_ms: f.timestamp_ms, event_type: `ai_${f.type}`, category: 'inference', title: f.title }));
   const playerEvents = aiEvents.length ? [...baseEvents.filter(isSignificant), ...aiEvents, ...findingMarkers] : keyEvents;
   const reviewCount = aiAnalysis ? aiFindings.length : (data.finds?.length || 0);
+  const aiProgress = aiElapsed < 10 ? 12 + aiElapsed : aiElapsed < 40 ? 22 + Math.round((aiElapsed - 10) * 1.2) : aiElapsed < 70 ? 58 + Math.round((aiElapsed - 40) * .8) : Math.min(94, 82 + Math.round((aiElapsed - 70) * .15));
+  const aiStage = aiElapsed < 10 ? 'Preparing YOLO-grounded frames' : aiElapsed < 40 ? 'Generating the visual narrative' : aiElapsed < 70 ? 'Creating simulated OBD records' : 'Comparing evidence for agreements and contradictions';
 
   const NavRail = data.none ? null : (
     <Panel as="nav" className="h-fit p-3" aria-label="Case navigation">
@@ -370,7 +380,7 @@ export default function Workspace() {
         <ErrorState title="No reconstruction yet" description="Review evidence setup above, then build a reconstruction." />
       ) : (
         <>
-          <section className="recon-summary" aria-label="Incident summary"><div className="flex flex-wrap items-center justify-between gap-2"><span className="t-eyebrow text-accent-text">INCIDENT SUMMARY</span><Button size="sm" variant="outline" icon={Sparkles} loading={aiBusy} onClick={generateAiAnalysis}>{aiAnalysis ? 'Refresh AI analysis' : 'Generate AI analysis'}</Button></div><p>{aiAnalysis?.narrative?.summary || executive?.sentences?.[0] || 'Review the recorded events and their evidence.'}</p><div className="flex flex-wrap gap-2">{aiAnalysis && <Badge variant="neutral">Featherless · YOLO grounded</Badge>}<Badge variant="neutral">{videos.length} recording{videos.length === 1 ? '' : 's'}</Badge><Badge variant="neutral">{reviewCount} items to review</Badge><Badge variant="neutral">{eff.value}</Badge></div></section>
+          <section className="recon-summary" aria-label="Incident summary"><div className="flex flex-wrap items-center justify-between gap-2"><span className="t-eyebrow text-accent-text">INCIDENT SUMMARY</span><Button size="sm" variant="outline" icon={Sparkles} loading={aiBusy} onClick={generateAiAnalysis}>{aiAnalysis ? 'Refresh AI analysis' : 'Generate AI analysis'}</Button></div>{aiBusy && <div className="mt-4 rounded-xl border border-accent/20 bg-accent/5 p-4" role="status" aria-live="polite"><div className="mb-2 flex flex-wrap justify-between gap-2"><span className="t-small font-medium text-fg">{aiStage}</span><span className="mono t-caption text-fg-3">{aiElapsed}s elapsed</span></div><ProgressBar value={aiProgress} ariaLabel="Estimated Featherless analysis progress" size="sm" /><p className="t-caption mt-2 text-fg-3">Usually 30–90 seconds. The indicator may pause while Featherless responds.</p></div>}<p>{aiAnalysis?.narrative?.summary || executive?.sentences?.[0] || 'Review the recorded events and their evidence.'}</p><div className="flex flex-wrap gap-2">{aiAnalysis && <Badge variant="neutral">Featherless · YOLO grounded</Badge>}<Badge variant="neutral">{videos.length} recording{videos.length === 1 ? '' : 's'}</Badge><Badge variant="neutral">{reviewCount} items to review</Badge><Badge variant="neutral">{eff.value}</Badge></div></section>
           <div className="recon-focus-layout">
             <div className="recon-video-column">
               <Panel as="section" className="p-5" aria-label="Evidence video">

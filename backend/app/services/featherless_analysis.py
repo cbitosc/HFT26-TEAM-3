@@ -11,7 +11,7 @@ Rules: timestamps must be from supplied frame times; never invent a road user ab
 
 OBD_PROMPT = """Create a compact simulated OBD demo series from the supplied validated visual narrative.
 Return JSON only: {"vehicle_track_id":1,"assumptions":["..."],"records":[{"timestamp_ms":0,"speed_kmh":0,"accel_mps2":0,"brake_pct":0}]}.
-This is fictional test data, not measurement. Use one-second intervals, plausible smooth values, 0-160 km/h, acceleration -12 to 8 m/s², brake 0-100. Do not claim video-derived speed. Maximum 120 rows."""
+This is fictional test data, not measurement. The input contains required_timestamps_ms: return exactly one record for each supplied timestamp and no other timestamps. Use plausible smooth values, 0-160 km/h, acceleration -12 to 8 m/s², brake 0-100. Do not claim video-derived speed."""
 
 COMPARE_PROMPT = """Compare a YOLO-grounded AI video narrative, fictional/user witness text, and explicitly simulated OBD records.
 Return JSON only: {"findings":[{"type":"correlation|contradiction|gap","timestamp_ms":0,"title":"...","explanation":"...","source_refs":[{"kind":"video_narrative|witness|simulated_obd","id":"..."}],"confidence":0.0,"uncertainty":"..."}]}.
@@ -60,7 +60,8 @@ def parse_obd(content, *, duration_ms, allowed_tracks):
     data=_json(content); track=int(data.get("vehicle_track_id"))
     if track not in allowed_tracks: raise ValueError("OBD references an unknown track")
     rows=data.get("records")
-    if not isinstance(rows,list) or not 2 <= len(rows) <= 120: raise ValueError("OBD requires 2 to 120 rows")
+    maximum=min(120, duration_ms // 1000 + 2)
+    if not isinstance(rows,list) or not 2 <= len(rows) <= maximum: raise ValueError(f"OBD requires 2 to {maximum} rows for this video")
     out=[]; previous=-1
     for row in rows:
         t=int(row.get("timestamp_ms")); speed=float(row.get("speed_kmh")); accel=float(row.get("accel_mps2")); brake=float(row.get("brake_pct"))
