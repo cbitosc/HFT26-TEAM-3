@@ -28,7 +28,7 @@ def test_health_shape_and_no_secret_leak():
 
 def test_health_reports_unconfigured_key():
     def no_key() -> Settings:
-        return get_settings().model_copy(update={"featherless_api_key": None})
+        return get_settings().model_copy(update={"featherless_api_key": None, "featherless_api_key_fallback": None})
 
     app.dependency_overrides[get_settings] = no_key
     try:
