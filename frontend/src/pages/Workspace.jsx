@@ -1,5 +1,5 @@
 import { ChapterStrip, ThisMoment, storyChapters } from '../components/ReconstructionStory';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Alert, Badge, Button, Checkbox, Drawer, ErrorState, IconButton, LoadingState, SectionHeader, Select, Tabs, useToast } from '../ui-kit';
 import { FileText, Film, Gauge, PanelLeftClose, PanelLeftOpen, Users } from 'lucide-react';
@@ -35,6 +35,7 @@ import IncidentSequence from '../components/IncidentSequence';
 import CrashCuePanel, { useCueSummaries } from '../components/CrashCue';
 import InvestigationFindings from '../components/InvestigationFindings';
 import { Associations, CameraFilter, EventClocks, EventTrace, HypothesisExplanation, KeyObservations, Overlaps, PhaseInspector, Scenarios, SensorPanelNote, evidenceLabel, sourceName } from '../components/Reconstruction';
+const Incident3D = lazy(() => import('../components/Incident3D'));
 
 const NAV_KEY = 'traceline.nav';
 /** The navigation rail starts collapsed on screens narrower than 1600 px so the video stays the main element; the choice is remembered. */
@@ -138,6 +139,7 @@ export default function Workspace() {
   const cues = useCueSummaries(videos, data?.runs);
   const keyEvents = useMemo(() => events.filter(isSignificant), [events]);
   const moment = useMemo(() => (data && !data.none ? pickMoment(events, data.crbs) : null), [data, events]);
+  const view3dVideo = videos.find((v) => v.id === primaryId) || videos[0] || null;
   const placedEvents = useMemo(() => events.filter((e) => e.start_ms != null), [events]);
   useAutoPause(placedEvents, `${scenarioId}:${primaryId}`);
   const alertState = useWorkspace((st) => st.alert);
@@ -334,6 +336,14 @@ export default function Workspace() {
 
             <ThisMoment event={momentEvent} nameOf={nameOf} questions={executive?.questions} onPlay={pick} onDetails={(e) => { pick(e); showInspector('event'); }} onEvidence={(e) => { pick(e); showInspector('evidence'); }} />
           </div>
+
+          {view3dVideo && (
+            <Panel as="section" className="mt-4 p-5" aria-label="3D reconstruction">
+              <Suspense fallback={<p className="t-small text-fg-3" role="status">Loading the 3D view…</p>}>
+                <Incident3D trajs={data.trajs} evidenceId={view3dVideo.id} video={{ width: view3dVideo.video?.width, height: view3dVideo.video?.height, kind: view3dVideo.kind }} moment={moment} nameOf={nameOf} />
+              </Suspense>
+            </Panel>
+          )}
 
           <div className="recon-review-sections">
           <details className="recon-disclosure"><summary><span>Key findings & open questions</span><small>{data.finds.length} items · conflicts, support & missing evidence</small></summary><div className="recon-disclosure-body">          <InvestigationFindings caseId={caseId} cons={data.cons} crbs={data.crbs} gaps={shown.gaps} finds={data.finds} events={[...events, ...data.tl.unplaced]} nameOf={nameOf} onReview={review} onSeek={seekTo} onPickEvent={pickById}

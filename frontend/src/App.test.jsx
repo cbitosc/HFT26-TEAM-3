@@ -9,7 +9,7 @@ import { useCaseContext } from './caseContext';
 vi.mock('./api', () => ({
   api: {
     cases: vi.fn(), case: vi.fn(), dashboard: vi.fn(), jobs: vi.fn(), findings: vi.fn(), evidence: vi.fn(), sync: vi.fn(), witnesses: vi.fn(), statements: vi.fn(),
-    frames: vi.fn(), patchCase: vi.fn(), reports: vi.fn(), reportById: vi.fn(), reportMd: vi.fn(), report: vi.fn(), scenarios: vi.fn(), actors: vi.fn(),
+    frames: vi.fn(), incidentEvents: vi.fn(), contradictions: vi.fn(), corroborations: vi.fn(), gaps: vi.fn(), patchCase: vi.fn(), reports: vi.fn(), reportById: vi.fn(), reportMd: vi.fn(), report: vi.fn(), scenarios: vi.fn(), actors: vi.fn(),
     streamUrl: (id) => `/api/v1/evidence/${id}/stream`, pdfUrl: (id) => `/api/v1/reports/${id}/pdf`, setClock: vi.fn(), patchSource: vi.fn(), sensors: vi.fn().mockResolvedValue({ items: [] }), sensorPreview: vi.fn(), registerSensor: vi.fn(),
   },
   ApiError: class extends Error {},
@@ -36,6 +36,7 @@ beforeEach(() => {
   api.frames.mockResolvedValue({ items: [{ thumbnail_url: '/api/v1/frames/1/image' }] });
   api.reports.mockResolvedValue({ items: [] });
   api.scenarios.mockResolvedValue({ items: [{ id: 'scn_1' }] });
+  api.incidentEvents.mockResolvedValue({ items: [] }); api.contradictions.mockResolvedValue({ items: [] }); api.corroborations.mockResolvedValue({ items: [] }); api.gaps.mockResolvedValue({ items: [] });
 });
 
 const primary = () => within(screen.getAllByRole('navigation', { name: 'Primary' })[0]);
@@ -55,7 +56,7 @@ describe('shared shell', () => {
     expect(primary().getByRole('link', { name: 'Evidence' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getAllByTestId('case-context')[0]).toHaveTextContent('Real junction');
     fireEvent.click(primary().getByRole('link', { name: 'Reports' }));
-    expect(await screen.findByText('No executive report yet')).toBeInTheDocument();
+    expect(await screen.findByLabelText('At a glance')).toBeInTheDocument();
     expect(api.reports).toHaveBeenCalledWith('case_r');
     expect(screen.getAllByTestId('case-context')[0]).toHaveTextContent('Real junction');
   });
@@ -67,7 +68,7 @@ describe('shared shell', () => {
   });
   it('sends the old workspace and report links to the new sections', async () => {
     app('/cases/case_r/report');
-    expect(await screen.findByText('No executive report yet')).toBeInTheDocument();
+    expect(await screen.findByLabelText('At a glance')).toBeInTheDocument();
   });
   it('forgets a selected case the backend no longer has', async () => {
     useCaseContext.getState().select({ id: 'gone', title: 'Gone', designation: 'real' });
@@ -228,6 +229,33 @@ describe('real and synthetic banners', () => {
   });
 });
 
+describe('reports page: quick brief', () => {
+  const flagged = { id: 'e1', event_type: 'possible_collision', start_ms: 14800, end_ms: 15000, evidence_id: 'ev_1', track_ids: [], track_classes: [], observations: { scene_cue: { frames: 10, peak_confidence: 0.94, strength: 'strong' } } };
+  it('opens on a brief with an at-a-glance block and one block per incident', async () => {
+    api.incidentEvents.mockResolvedValue({ items: [flagged] });
+    api.gaps.mockResolvedValue({ items: [{ gap_type: 'no_camera_calibration', recommendation: 'Measure points' }] });
+    app('/reports/case_r');
+    const glance = await screen.findByLabelText('At a glance');
+    expect(within(glance).getByText(/One possible accident was flagged/)).toBeInTheDocument();
+    const inc = screen.getByLabelText(/^Incident 1/);
+    expect(within(inc).getByText(/peak 94%/)).toBeInTheDocument();
+    expect(within(inc).getByText('Contact is not confirmed.')).toBeInTheDocument();
+    expect(screen.getByLabelText('What is missing')).toHaveTextContent('No camera calibration');
+    expect(screen.getByLabelText('Next steps')).toBeInTheDocument();
+  });
+  it('says no accident was detected without claiming none happened', async () => {
+    app('/reports/case_r');
+    expect(await screen.findByText('No accident was detected in the analysed footage.')).toBeInTheDocument();
+    expect(screen.getByText(/does not show that no accident happened/)).toBeInTheDocument();
+  });
+  it('keeps the validated full report one click away', async () => {
+    app('/reports/case_r');
+    await screen.findByLabelText('At a glance');
+    fireEvent.click(screen.getByRole('radio', { name: 'Full report' }));
+    expect(await screen.findByRole('button', { name: /Generate executive report/ })).toBeInTheDocument();
+  });
+});
+
 describe('reports page', () => {
   const rep = (over) => ({ id: 'rpt_1', case_id: 'case_r', version: 1, created_at: '2026-10-30T11:00:00Z', has_pdf: true, validation: { passed: true, checks: [{ check: 'no language assigning fault', passed: true }] }, ...over });
   it('previews an executive and a technical report from their stored format and offers a PDF only where one exists', async () => {
@@ -235,6 +263,7 @@ describe('reports page', () => {
     api.reportById.mockClear();
     api.reportMd.mockImplementation(async (id) => `# markdown for ${id}`);
     app('/reports/case_r');
+    fireEvent.click(await screen.findByRole('radio', { name: 'Full report' }));
     expect(await screen.findByText('# markdown for rpt_1')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Download PDF' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('radio', { name: 'Technical' }));
@@ -247,6 +276,7 @@ describe('reports page', () => {
   it('generates the investigator format for executive and the full export for technical', async () => {
     api.report.mockResolvedValue({ id: 'rpt_9' });
     app('/reports/case_r');
+    fireEvent.click(await screen.findByRole('radio', { name: 'Full report' }));
     fireEvent.click(await screen.findByRole('button', { name: /Generate executive report/ }));
     await waitFor(() => expect(api.report).toHaveBeenCalledWith('case_r', null, 'investigator'));
     fireEvent.click(screen.getByRole('radio', { name: 'Technical' }));
@@ -257,6 +287,7 @@ describe('reports page', () => {
     api.scenarios.mockResolvedValue({ items: [] });
     app('/reports/case_r');
     expect(await screen.findByText('No reconstruction yet')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('radio', { name: 'Full report' }));
     expect(screen.getByRole('button', { name: /Generate executive report/ })).toBeDisabled();
   });
 });
