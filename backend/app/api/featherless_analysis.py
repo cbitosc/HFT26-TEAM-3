@@ -24,22 +24,32 @@ def _extra(settings):
 
 
 def _latest(db,case_id):
-    rows=db.execute(select(LlmCall).where(LlmCall.provider=="featherless",LlmCall.valid.is_(True),LlmCall.error.is_(None)).order_by(LlmCall.id.desc()).limit(100)).scalars()
+    rows=db.execute(select(LlmCall).where(LlmCall.provider=="featherless",LlmCall.valid.is_(True),LlmCall.error.is_(None),
+            LlmCall.request_meta["purpose"].astext=="case_evidence_comparison",LlmCall.request_meta["input_ref"]["case_id"].astext==case_id)
+            .order_by(LlmCall.id.desc()).limit(20)).scalars()
     for row in rows:
         meta=row.request_meta or {}; ref=meta.get("input_ref") or {}
-        if meta.get("purpose")=="case_evidence_comparison" and ref.get("case_id")==case_id:
-            bundle=ref.get("bundle")
-            if not isinstance(bundle,dict):
-                continue
-            comparison=fa._json((row.response or {}).get("content", "{}"))
-            return bundle | {"findings":comparison.get("findings",[]),"comparison_call_id":row.id}
+        bundle=ref.get("bundle")
+        if not isinstance(bundle,dict):
+            continue
+        comparison=fa._json((row.response or {}).get("content", "{}"))
+        return bundle | {"findings":comparison.get("findings",[]),"comparison_call_id":row.id}
     return None
+
+
+# Analyses started in the background for cases that allow external AI. Kept in memory: a restart simply forgets a running one,
+# and the stored result (if it finished) is what the page reads.
+RUNNING: set[str] = set()
+FAILED: dict[str, str] = {}
 
 
 @router.get("/cases/{case_id}/featherless-analysis")
 def read(case:Case=Depends(get_case),db:Session=Depends(get_db)):
     item=_latest(db,case.id)
-    return {"status":"ready","analysis":item} if item else {"status":"not_generated","analysis":None}
+    if item: return {"status":"ready","analysis":item}
+    if case.id in RUNNING: return {"status":"generating","analysis":None}
+    if case.id in FAILED: return {"status":"failed","analysis":None,"error":FAILED[case.id]}
+    return {"status":"not_generated","analysis":None}
 
 
 @router.post("/cases/{case_id}/featherless-analysis")
@@ -110,3 +120,20 @@ def download_obd(case:Case=Depends(get_case),db:Session=Depends(get_db)):
     item=_latest(db,case.id)
     if not item: raise AppError(404,"FEATHERLESS_ANALYSIS_NOT_FOUND","Generate Featherless analysis first")
     return Response(fa.obd_csv(item["simulated_obd"]),media_type="text/csv",headers={"Content-Disposition":'attachment; filename="SIMULATED_Featherless_OBD.csv"'})
+
+
+def auto_generate(case_id:str,factory,settings:Settings)->None:
+    """Background task: the same analysis as the button, for a case that allows external AI. Never raises; a failure is kept for the page to show."""
+    if case_id in RUNNING: return
+    RUNNING.add(case_id); FAILED.pop(case_id,None)
+    try:
+        with factory() as db:
+            case=db.get(Case,case_id)
+            if case is None or not case.allow_external_inference or not settings.featherless_configured or _latest(db,case_id): return
+            generate(case=case,db=db,settings=settings,who="system")
+    except AppError as exc:
+        FAILED[case_id]=f"{exc.code}: {exc.message}"[:240]
+    except Exception as exc:  # noqa: BLE001 - a background task must not crash the worker
+        FAILED[case_id]=f"{type(exc).__name__}: {exc}"[:240]
+    finally:
+        RUNNING.discard(case_id)
