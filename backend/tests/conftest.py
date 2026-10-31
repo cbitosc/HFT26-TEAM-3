@@ -73,7 +73,8 @@ def client(engine, tmp_path):
     factory = sessionmaker(bind=engine, expire_on_commit=False, future=True)
     real = settings_dep()
     settings = real.model_copy(update={"storage_root": tmp_path / "store", "max_video_mb": 5, "max_other_mb": 1,
-                                       "models_dir": real.models_path})  # pinned weights are shared, read-only
+                                       "models_dir": real.models_path,
+                                       "featherless_api_key": None, "featherless_api_key_fallback": None})  # pinned weights are shared, read-only; tests never see or spend real keys from .env
 
     def db_dep():
         with factory() as s:
