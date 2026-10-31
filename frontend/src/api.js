@@ -44,6 +44,10 @@ export const api = {
     const body = await res.json(); if (!res.ok) throw new ApiError(res.status, body); return body;
   },
   actors: (id) => req(`/cases/${id}/actors`),
+  suggestActorLabels: (id, body = {}) => req(`/cases/${id}/actors/suggest-labels`, { method: 'POST', body: JSON.stringify(body) }),
+  featherlessAnalysis: (id) => req(`/cases/${id}/featherless-analysis`),
+  generateFeatherlessAnalysis: (id) => req(`/cases/${id}/featherless-analysis`, { method: 'POST' }),
+  featherlessObdUrl: (id) => `${BASE}/cases/${id}/featherless-analysis/obd.csv`,
   scenarios: (id) => req(`/cases/${id}/reconstruction/scenarios`),
   buildScenario: (id, body) => req(`/cases/${id}/reconstruction/scenarios`, { method: 'POST', body: JSON.stringify(body) }),
   timeline: (id, scenario) => req(`/cases/${id}/timeline${q({ scenario_id: scenario })}`),

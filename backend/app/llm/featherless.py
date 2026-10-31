@@ -79,7 +79,9 @@ class FeatherlessClient:
         meta = {"purpose": purpose, "model": model, "response_format": response_format, "extra_body": extra_body, "input_ref": input_ref, "attempts": []}
         t0 = time.perf_counter()
         last_err = None
-        with httpx.Client(transport=self.transport, timeout=90) as http:
+        # Do not inherit unrelated machine proxy variables; they can require optional SOCKS
+        # dependencies and must never redirect evidence-bound API traffic.
+        with httpx.Client(transport=self.transport, timeout=90, trust_env=False) as http:
             for attempt in range(1, self.max_attempts + 1):
                 try:
                     r = http.post(url, json=body, headers=headers)

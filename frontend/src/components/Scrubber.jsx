@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useWorkspace } from '../store';
 import { CATEGORY_STYLE } from '../fmt';
 
+const markerColor = (event) => ({ ai_contradiction: '#ef4444', ai_correlation: '#22c55e', ai_gap: '#f59e0b' }[event.event_type] || CATEGORY_STYLE[event.category]?.color);
+
 /** Seek bar over the case clock with an event tick for every placed event. The playhead is moved by subscribing to the store and writing a
  *  CSS transform: React does not re-render this component while the video plays. */
 export default function Scrubber({ range, events, onSeek, onSelect }) {
@@ -15,7 +17,7 @@ export default function Scrubber({ range, events, onSeek, onSelect }) {
   const ticks = useMemo(() => {
     const by = new Map();
     events.forEach((e) => { const k = Math.round(pct(e.start_ms)); by.set(k, [...(by.get(k) || []), e]); });
-    return [...by.values()].map((g) => ({ g, first: g[0], n: g.length }));
+    return [...by.values()].map((g) => ({ g, first: g.find((event) => event.event_type?.startsWith('ai_') && event.event_type !== 'ai_visual_narrative') || g[0], n: g.length }));
   }, [events, lo, hi]);
 
   useEffect(() => {
@@ -44,7 +46,7 @@ export default function Scrubber({ range, events, onSeek, onSelect }) {
       <div className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-line" aria-hidden />
       {ticks.map(({ first, n, g }) => (
         <button key={first.id} type="button" data-tick="1" title={n > 1 ? `${n} events here, first: ${first.title}` : first.title} aria-label={n > 1 ? `${n} events, first: ${first.title}` : first.title}
-                onClick={() => onSelect(first)} style={{ left: `${pct(first.start_ms)}%`, background: CATEGORY_STYLE[first.category]?.color, height: `${Math.min(12 + n * 2, 22)}px` }}
+                onClick={() => onSelect(first)} style={{ left: `${pct(first.start_ms)}%`, background: markerColor(first), height: `${Math.min(12 + n * 2, 22)}px` }}
                 className="absolute top-1/2 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-sm opacity-80 hover:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" />
       ))}
       {incident && <div className="pointer-events-none absolute top-0 h-full w-1.5 -translate-x-1/2 rounded-sm bg-danger" style={{ left: `${pct(incident.ms)}%` }} title="Possible accident moment" aria-hidden />}

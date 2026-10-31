@@ -2,7 +2,7 @@ import { jobErrorMessage } from '../lib/jobs';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Shell from '../layout';
-import { Alert, Badge, Button, Card, Field, Input, LoadingState, Select, Textarea } from '../ui-kit';
+import { Alert, Badge, Button, Card, Checkbox, Field, Input, LoadingState, Select, Textarea } from '../ui-kit';
 import { Check } from 'lucide-react';
 import { api } from '../api';
 import { useCaseContext } from '../caseContext';
@@ -29,7 +29,7 @@ function Stepper({ step }) {
 
 /** Step 1. Creates the case. Incident time (with the time zone offset you choose) and location are stored by the backend. */
 function Details({ initial, onCreated }) {
-  const [f, setF] = useState({ title: initial.title, designation: initial.designation, incident_at: '', location: '', description: '', reference: '' });
+  const [f, setF] = useState({ title: initial.title, designation: initial.designation, incident_at: '', location: '', description: '', reference: '', allow_external_inference: false });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
   const refErr = f.reference && !REF.test(f.reference) ? 'Use 3 to 40 letters, digits, dash or underscore.' : undefined;
@@ -37,6 +37,7 @@ function Details({ initial, onCreated }) {
     e.preventDefault(); setBusy(true); setErr(null);
     try {
       const body = { title: f.title.trim(), designation: f.designation };
+      if (f.allow_external_inference) body.allow_external_inference = true;
       if (f.description.trim()) body.description = f.description.trim();
       if (f.reference) body.code = f.reference;
       if (f.incident_at) body.incident_at = toIncidentAt(f.incident_at, browserOffset(f.incident_at));
@@ -58,6 +59,7 @@ function Details({ initial, onCreated }) {
       </div>
       <Field label="Description" optional><Textarea rows={3} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} disabled={busy} /></Field>
       <Field label="Reference" optional error={refErr} hint="Used as the case code if given, for example your report number."><Input value={f.reference} onChange={(e) => setF({ ...f, reference: e.target.value })} disabled={busy} /></Field>
+      <Checkbox label="Allow selected accident frames and evidence text to be sent to Featherless AI" checked={f.allow_external_inference} onChange={(e) => setF({ ...f, allow_external_inference: e.target.checked })} disabled={busy} />
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" variant="primary" loading={busy} disabled={!f.title.trim() || !!refErr}>Create investigation</Button>
         {f.designation === 'synthetic' && <Badge variant="warning">will be labelled synthetic</Badge>}
