@@ -429,3 +429,66 @@ def test_manual_claim_gets_code_derived_maneuver(api):
     _, st = add_statement(c, case["id"], text_="The white van kept going straight.")
     m = c.post(f"/api/v1/statements/{st['id']}/claims", json={"char_start": 0, "char_end": 34, "direction": "left"}).json()
     assert m["normalized_interpretation"]["code_derived_maneuver"] == "straight" and m["normalized_interpretation"]["direction_check"] == "differs"
+
+
+# ------------------------------------------------------------------------------------------ fallback key
+def _chat(c, api):
+    from app.models import Case
+
+    case = make_case(c)
+    with c.factory() as s:
+        cl = FeatherlessClient(c.settings, transport=httpx.MockTransport(api.handler), sleep=lambda *_: None)
+        return cl.chat(s, case=s.get(Case, case["id"]), model="m", messages=[{"role": "user", "content": "x"}], purpose="t", input_ref={"a": 1})
+
+
+def test_second_key_takes_over_when_the_first_has_no_usage_left(api):
+    c = api.client
+    c.settings.featherless_api_key = SecretStr("first-key-value")
+    c.settings.featherless_api_key_fallback = SecretStr("second-key-value")
+    api.status(402)  # the first key: usage exhausted
+    api.ok("hello")
+    res = _chat(c, api)
+    assert res.content == "hello"
+    assert [r["headers"]["authorization"] for r in api.requests] == ["Bearer first-key-value", "Bearer second-key-value"]
+
+
+def test_a_persistent_rate_limit_on_the_first_key_also_moves_to_the_second(api):
+    c = api.client
+    c.settings.featherless_api_key = SecretStr("first-key-value")
+    c.settings.featherless_api_key_fallback = SecretStr("second-key-value")
+    api.status(429); api.status(429); api.status(429)  # first key exhausts its retries
+    api.ok("ok")
+    assert _chat(c, api).content == "ok"
+    assert [r["headers"]["authorization"] for r in api.requests][-1] == "Bearer second-key-value"
+
+
+def test_the_second_key_is_not_used_when_the_first_works_or_on_server_errors(api):
+    c = api.client
+    c.settings.featherless_api_key = SecretStr("first-key-value")
+    c.settings.featherless_api_key_fallback = SecretStr("second-key-value")
+    api.ok("fine")
+    _chat(c, api)
+    assert len(api.requests) == 1 and api.requests[0]["headers"]["authorization"] == "Bearer first-key-value"
+    api.requests.clear()
+    for _ in range(3):
+        api.status(503)
+    with pytest.raises(featherless.LlmError):
+        _chat(c, api)
+    assert {r["headers"]["authorization"] for r in api.requests} == {"Bearer first-key-value"}
+
+
+def test_both_keys_refused_is_an_error_and_never_records_a_key(api):
+    from app.models import Case, LlmCall
+
+    c = api.client
+    c.settings.featherless_api_key = SecretStr("first-key-value")
+    c.settings.featherless_api_key_fallback = SecretStr("second-key-value")
+    api.status(401); api.status(401)
+    case = make_case(c)
+    with c.factory() as s:
+        cl = FeatherlessClient(c.settings, transport=httpx.MockTransport(api.handler), sleep=lambda *_: None)
+        with pytest.raises(featherless.LlmError):
+            cl.chat(s, case=s.get(Case, case["id"]), model="m", messages=[{"role": "user", "content": "x"}], purpose="t", input_ref={"a": 1})
+        call = s.execute(__import__("sqlalchemy").select(LlmCall).order_by(LlmCall.id.desc())).scalars().first()
+        text = json.dumps(call.request_meta)
+    assert "key-value" not in text and [a["key_slot"] for a in call.request_meta["attempts"]] == [0, 1]

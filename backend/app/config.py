@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     storage_root: Path = Path("data")
 
     featherless_api_key: SecretStr | None = None
+    # used only when the first key is refused for auth/usage reasons (HTTP 401, 402, 403 or 429)
+    featherless_api_key_fallback: SecretStr | None = None
     featherless_base_url: str = "https://api.featherless.ai/v1"
     featherless_text_model: str = "Qwen/Qwen3-14B"
     featherless_vision_model: str = "Qwen/Qwen3-VL-8B-Instruct"
@@ -49,7 +51,12 @@ class Settings(BaseSettings):
 
     @property
     def featherless_configured(self) -> bool:
-        return bool(self.featherless_api_key and self.featherless_api_key.get_secret_value().strip())
+        return bool(self.featherless_keys)
+
+    @property
+    def featherless_keys(self) -> list[str]:
+        """Configured keys in order of use: the main key, then the fallback. Never logged or returned."""
+        return [k.get_secret_value().strip() for k in (self.featherless_api_key, self.featherless_api_key_fallback) if k and k.get_secret_value().strip()]
 
 
 @lru_cache

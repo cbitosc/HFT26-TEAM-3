@@ -15,6 +15,8 @@ from app.config import Settings
 from app.models import Case, LlmCall
 
 RETRY_STATUS = {429, 500, 502, 503, 504}
+# a refusal that another key may not share: bad or revoked key, payment/usage exhausted, or a rate/usage limit that outlasted the retries
+KEY_STATUS = {401, 402, 403, 429}
 
 
 class PolicyBlocked(Exception):
@@ -73,39 +75,46 @@ class FeatherlessClient:
         if cached is not None:
             return ChatResult(cached.response["content"], cached.tokens_in, cached.tokens_out, 0, True, cached.id)
 
-        headers = {"Authorization": f"Bearer {self.settings.featherless_api_key.get_secret_value()}",  # type: ignore[union-attr]
-                   "Content-Type": "application/json", "HTTP-Referer": "https://github.com/", "X-Title": "TraceLine"}
         url = self.settings.featherless_base_url.rstrip("/") + "/chat/completions"
         meta = {"purpose": purpose, "model": model, "response_format": response_format, "extra_body": extra_body, "input_ref": input_ref, "attempts": []}
         t0 = time.perf_counter()
         last_err = None
+        keys = self.settings.featherless_keys
         # Do not inherit unrelated machine proxy variables; they can require optional SOCKS
         # dependencies and must never redirect evidence-bound API traffic.
         with httpx.Client(transport=self.transport, timeout=90, trust_env=False) as http:
-            for attempt in range(1, self.max_attempts + 1):
-                try:
-                    r = http.post(url, json=body, headers=headers)
-                except httpx.HTTPError as exc:
-                    last_err = f"{type(exc).__name__}"
-                    meta["attempts"].append({"attempt": attempt, "error": last_err})
-                else:
-                    meta["attempts"].append({"attempt": attempt, "status": r.status_code})
-                    if r.status_code == 200:
-                        data = r.json()
-                        content = data["choices"][0]["message"].get("content") or ""
-                        usage = data.get("usage") or {}
-                        call = LlmCall(model_run_id=model_run_id, model=model, prompt_hash=prompt_hash, input_hash=input_hash, request_meta=meta,
-                                       response={"content": content, "finish_reason": data["choices"][0].get("finish_reason")},
-                                       tokens_in=usage.get("prompt_tokens"), tokens_out=usage.get("completion_tokens"),
-                                       latency_ms=int((time.perf_counter() - t0) * 1000))
-                        session.add(call)
-                        session.flush()
-                        return ChatResult(content, call.tokens_in, call.tokens_out, call.latency_ms, False, call.id)
-                    last_err = f"HTTP {r.status_code}"
-                    if r.status_code not in RETRY_STATUS:
-                        break
-                if attempt < self.max_attempts:
-                    self.sleep(min(8.0, 0.5 * 2 ** (attempt - 1)))
+            for slot, key in enumerate(keys):
+                headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json", "HTTP-Referer": "https://github.com/", "X-Title": "TraceLine"}
+                refused = False  # this key was refused in a way a different key might not be
+                for attempt in range(1, self.max_attempts + 1):
+                    try:
+                        r = http.post(url, json=body, headers=headers)
+                    except httpx.HTTPError as exc:
+                        last_err = f"{type(exc).__name__}"
+                        meta["attempts"].append({"attempt": attempt, "key_slot": slot, "error": last_err})
+                    else:
+                        meta["attempts"].append({"attempt": attempt, "key_slot": slot, "status": r.status_code})
+                        if r.status_code == 200:
+                            data = r.json()
+                            content = data["choices"][0]["message"].get("content") or ""
+                            usage = data.get("usage") or {}
+                            call = LlmCall(model_run_id=model_run_id, model=model, prompt_hash=prompt_hash, input_hash=input_hash, request_meta=meta,
+                                           response={"content": content, "finish_reason": data["choices"][0].get("finish_reason")},
+                                           tokens_in=usage.get("prompt_tokens"), tokens_out=usage.get("completion_tokens"),
+                                           latency_ms=int((time.perf_counter() - t0) * 1000))
+                            session.add(call)
+                            session.flush()
+                            return ChatResult(content, call.tokens_in, call.tokens_out, call.latency_ms, False, call.id)
+                        last_err = f"HTTP {r.status_code}"
+                        refused = r.status_code in KEY_STATUS
+                        if r.status_code in {401, 402, 403}:
+                            break  # no point retrying the same key
+                        if r.status_code not in RETRY_STATUS:
+                            break
+                    if attempt < self.max_attempts:
+                        self.sleep(min(8.0, 0.5 * 2 ** (attempt - 1)))
+                if not refused:
+                    break  # a network or server failure is not fixed by another key
         call = LlmCall(model_run_id=model_run_id, model=model, prompt_hash=prompt_hash, input_hash=input_hash, request_meta=meta,
                        response=None, latency_ms=int((time.perf_counter() - t0) * 1000), error=last_err)
         session.add(call)
