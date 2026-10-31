@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.api.deps import get_factory
 from app.config import get_settings
+from app.services.video import _passthrough_frames
 from app.db import get_db
 from app.main import app
 
@@ -105,7 +106,7 @@ def gappy_video(tmp_path_factory) -> Path:
     """4 s at 15 fps with frames 20-35 removed while keeping the original timestamps (about a 1 s gap)."""
     d = tmp_path_factory.mktemp("gappy")
     return _ffmpeg(["-f", "lavfi", "-i", "testsrc=duration=4:size=320x240:rate=15", "-vf", "select='not(between(n,20,35))'",
-                    "-vsync", "0", "-pix_fmt", "yuv420p", "-c:v", "libx264"], d / "gappy.mp4")
+                    *_passthrough_frames(), "-pix_fmt", "yuv420p", "-c:v", "libx264"], d / "gappy.mp4")
 
 
 @pytest.fixture(scope="session")
@@ -113,7 +114,7 @@ def offset_video(tmp_path_factory) -> Path:
     """2 s at 15 fps whose first frame is stamped ~2.5 s into the container timeline."""
     d = tmp_path_factory.mktemp("offset")
     return _ffmpeg(["-f", "lavfi", "-i", "testsrc=duration=2:size=320x240:rate=15", "-vf", "setpts=PTS+2.5/TB",
-                    "-vsync", "0", "-pix_fmt", "yuv420p", "-c:v", "libx264"], d / "offset.mp4")
+                    *_passthrough_frames(), "-pix_fmt", "yuv420p", "-c:v", "libx264"], d / "offset.mp4")
 
 
 @pytest.fixture(scope="session")
