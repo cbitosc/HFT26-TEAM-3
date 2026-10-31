@@ -31,7 +31,7 @@ describe('guided flow: create investigation', () => {
     fireEvent.change(screen.getByLabelText(/^Description/), { target: { value: 'North approach' } });
     fireEvent.change(screen.getByLabelText(/^Reference/), { target: { value: 'REF-2026-14' } });
     await create();
-    expect(api.createCase).toHaveBeenCalledWith({ title: 'Junction', designation: 'real', allow_external_inference: true, description: 'North approach', code: 'REF-2026-14' });
+    expect(api.createCase).toHaveBeenCalledWith({ title: 'Junction', designation: 'real', description: 'North approach', code: 'REF-2026-14' });
     expect(useCaseContext.getState().selected).toMatchObject({ id: 'c1', designation: 'real' });
   });
   it('sends incident time (with the browser offset, not asked for) and the location to the backend, and no longer says they are browser-only', async () => {
@@ -41,7 +41,7 @@ describe('guided flow: create investigation', () => {
     fireEvent.change(screen.getByLabelText(/^Location/), { target: { value: 'Main St' } });
     expect(screen.queryByText(/Kept in this browser only/)).toBeNull();
     await create();
-    expect(api.createCase).toHaveBeenCalledWith({ title: 'Junction', designation: 'real', allow_external_inference: true, incident_at: expect.stringMatching(/^2026-10-30T10:32:00[+-]\d{2}:\d{2}$/), location_text: 'Main St' });
+    expect(api.createCase).toHaveBeenCalledWith({ title: 'Junction', designation: 'real', incident_at: expect.stringMatching(/^2026-10-30T10:32:00[+-]\d{2}:\d{2}$/), location_text: 'Main St' });
     expect(localStorage.getItem('traceline.caseMeta.c1')).toBeNull();
   });
   it('omits incident time and location when they are left empty', async () => {
@@ -56,23 +56,6 @@ describe('guided flow: create investigation', () => {
     fireEvent.change(screen.getByLabelText(/^Reference/), { target: { value: 'a b' } });
     expect(screen.getByText(/3 to 40 letters/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Create investigation/ })).toBeDisabled();
-  });
-});
-
-describe('guided flow: AI analysis opt-in', () => {
-  it('is on by default so every new case gets the automatic AI analysis, and says what it sends', async () => {
-    wrap('/new?title=Junction&designation=real');
-    const box = screen.getByRole('checkbox', { name: /Analyse with Featherless AI/ });
-    expect(box).toBeChecked();
-    expect(screen.getByText(/selected accident frames and witness text/)).toBeInTheDocument();
-    await create();
-    expect(api.createCase.mock.calls[0][0]).toMatchObject({ allow_external_inference: true });
-  });
-  it('can be switched off, and then nothing is allowed to leave the machine', async () => {
-    wrap('/new?title=Junction&designation=real');
-    fireEvent.click(screen.getByRole('checkbox', { name: /Analyse with Featherless AI/ }));
-    await create();
-    expect(api.createCase.mock.calls[0][0]).not.toHaveProperty('allow_external_inference');
   });
 });
 

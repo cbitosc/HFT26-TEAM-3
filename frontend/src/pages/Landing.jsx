@@ -1,44 +1,25 @@
-import { lazy, useEffect } from 'react';
-import '../landing/landing.css';
-import { DemoVideoProvider } from '../landing/VideoContext';
-import Defer from '../landing/Defer';
-import LandingNavbar from '../landing/LandingNavbar';
-import HeroSection from '../landing/HeroSection';
-import DemoVideoSection from '../landing/DemoVideoSection';
-import ProblemSection from '../landing/ProblemSection';
-import HowItWorksSection from '../landing/HowItWorksSection';
-import LandingFooter from '../landing/LandingFooter';
-
-const ReconstructionTimelineSection = lazy(() => import('../landing/ReconstructionTimelineSection'));
-const EvidenceCorrelationSection = lazy(() => import('../landing/EvidenceCorrelationSection'));
-const ContradictionsSection = lazy(() => import('../landing/ContradictionsSection'));
-const InvestigationReportSection = lazy(() => import('../landing/InvestigationReportSection'));
-const FinalCTA = lazy(() => import('../landing/FinalCTA'));
-
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowUpRight, ArrowRight, Play, Layers, Clock3, GitCompare, Route, ShieldCheck, ScanLine } from 'lucide-react';
+import { Brand, Button } from '../ui-kit';
+import { api } from '../api';
+const features = [
+  [Layers, 'Every source. One workspace.', 'Bring dashcam footage, CCTV, witness accounts and sensor records into a single investigation.'],
+  [Clock3, 'Follow the sequence.', 'Explore events on a clock-aware timeline. Inspect the source behind each moment.'],
+  [GitCompare, 'Surface the contradictions.', 'See where accounts disagree, where sources support each other, and what remains missing.'],
+  [Route, 'Make movement visible.', 'Review camera trajectories and calibrated ground-plane paths with their uncertainty.'],
+];
 export default function Landing() {
-  useEffect(() => {
-    const prev = document.title;
-    document.title = 'TraceLine · Reconstruct what really happened';
-    return () => { document.title = prev; };
-  }, []);
-  return (
-    <div className="tl-land">
-      <DemoVideoProvider>
-        <a href="#product" className="tl-skip">Skip to content</a>
-        <LandingNavbar />
-        <main>
-          <HeroSection />
-          <ProblemSection />
-          <HowItWorksSection />
-          <DemoVideoSection />
-          <Defer id="timeline" minHeight={1900}><ReconstructionTimelineSection /></Defer>
-          <Defer id="correlation" minHeight={1050}><EvidenceCorrelationSection /></Defer>
-          <Defer id="contradictions" minHeight={1750}><ContradictionsSection /></Defer>
-          <Defer id="report" minHeight={1290}><InvestigationReportSection /></Defer>
-          <Defer id="cta" minHeight={440}><FinalCTA /></Defer>
-        </main>
-        <LandingFooter />
-      </DemoVideoProvider>
-    </div>
-  );
+  const [demo, setDemo] = useState(null);
+  useEffect(() => { let active = true; api.cases().then(r => { if (active) setDemo(r.items.find(c => c.designation === 'synthetic')); }).catch(() => {}); return () => { active = false; }; }, []);
+  return <div className="ember-landing">
+    <nav className="ember-nav" aria-label="Main navigation"><Brand name="TraceLine" /><div className="ember-nav-links"><a href="#platform">Platform</a><a href="#workflow">How it works</a><Link to="/cases">Investigations</Link></div><Button as={Link} to="/dashboard" variant="outline">Open workspace <ArrowUpRight size={16} /></Button></nav>
+    <main><section className="ember-hero"><div className="ember-hero-copy"><span className="ember-kicker"><span /> EVIDENCE-LED RECONSTRUCTION</span><h1>Every detail.<br />One clear<br /><em>sequence.</em></h1><p>From fragmented evidence to a traceable story. Reconstruct the incident, understand the movements, and see what the evidence actually supports.</p><div className="ember-actions"><Button as={Link} to="/new" variant="primary" size="lg">Start investigation <ArrowUpRight size={18}/></Button><Button as={Link} to={demo ? `/reconstruction/${demo.id}` : '/cases'} size="lg" variant="outline"><Play size={16}/>{demo ? 'Explore demo' : 'Browse cases'}</Button></div><div className="ember-hero-proof"><ShieldCheck size={16}/><span>Evidence first. Every finding traceable.</span></div></div><div className="ember-visual"><img src="/reconstruction-hero.png" alt="Illustrative vehicle reconstruction at a city intersection at sunset" fetchPriority="high"/><div className="ember-visual-top"><span><ScanLine size={14}/> RECONSTRUCTION LAB</span><span>ILLUSTRATIVE SCENE</span></div><div className="ember-visual-bottom"><div><span className="ember-kicker">CONNECT THE EVIDENCE</span><strong>A clearer view of what happened.</strong></div><span className="ember-orbit"><ArrowUpRight/></span></div></div></section>
+    <div className="ember-capabilities"><span>MULTI-SOURCE INPUT</span><span>TIME-ALIGNED EVENTS</span><span>CONTRADICTION ANALYSIS</span><span>TRACEABLE REPORTS</span></div>
+    <section className="ember-section" id="platform"><div className="ember-section-heading"><div><span className="ember-kicker">THE INVESTIGATION, CONNECTED</span><h2>Less searching.<br /><span>More understanding.</span></h2></div><p>One deliberate workspace for the whole investigation. Follow the evidence from intake to reconstruction, with room to focus on what matters.</p></div><div className="ember-feature-grid">{features.map(([Icon,title,text],i)=><article key={title}><div className="ember-feature-top"><Icon size={26}/><span>0{i+1}</span></div><h3>{title}</h3><p>{text}</p></article>)}</div></section>
+    <section className="ember-workflow ember-section" id="workflow"><div><span className="ember-kicker">FROM SOURCE TO STORY</span><h2>A complex incident.<br /><span>A clear way through.</span></h2><p>Move step by step. Keep originals intact, review extracted events, and check the reconstruction before sharing a report.</p><Button as={Link} to="/new" variant="outline">Create your first case <ArrowRight size={16}/></Button></div><ol>{[['Ingest','Upload footage, witness statements and vehicle records.'],['Extract','Index detections, claims, tracks and sensor events.'],['Connect','Align known clocks and compare sources with confirmed identities.'],['Review','Inspect uncertainty, resolve findings, and export a traceable report.']].map(([title,text],i)=><li key={title}><span>0{i+1}</span><div><h3>{title}</h3><p>{text}</p></div><ArrowUpRight size={18}/></li>)}</ol></section>
+    <section className="ember-principles"><ShieldCheck/><div><h3>Clarity includes what we don’t know.</h3><p>Observations stay separate from inferences. Missing evidence stays visible. TraceLine supports investigation; it does not determine fault.</p></div></section>
+    <section className="ember-cta"><span className="ember-kicker">YOUR NEXT INVESTIGATION</span><h2>Start with the evidence.<br /><span>Build the whole picture.</span></h2><Button as={Link} to="/new" variant="primary" size="lg">Start investigation <ArrowUpRight size={18}/></Button></section></main>
+    <footer className="ember-footer"><Brand name="TraceLine"/><span>Evidence into clarity.</span><small>Investigation support · Never a verdict</small></footer>
+  </div>;
 }

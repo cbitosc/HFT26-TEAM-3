@@ -192,21 +192,6 @@ def browser_compatible(stream: dict, pts_start_ms: float, rotation: int | None) 
             and not canonical_rotation(rotation) and abs(pts_start_ms) < 0.5)
 
 
-_PASSTHROUGH: list[str] | None = None
-
-
-def _passthrough_frames() -> list[str]:
-    """Keep every frame and its timing. `-fps_mode passthrough` replaced `-vsync 0`, which newer ffmpeg (8 and later) rejects."""
-    global _PASSTHROUGH
-    if _PASSTHROUGH is None:
-        try:
-            help_text = subprocess.run(["ffmpeg", "-hide_banner", "-h", "long"], capture_output=True, text=True, timeout=30).stdout
-        except (OSError, subprocess.SubprocessError):
-            help_text = ""
-        _PASSTHROUGH = ["-fps_mode", "passthrough"] if "-fps_mode" in help_text else ["-vsync", "0"]
-    return _PASSTHROUGH
-
-
 def make_playback(src: Path, dst: Path, pts_start_ms: float, rotation: int | None) -> dict:
     """Write a browser-safe H.264 MP4 that starts at t=0 and keeps every frame's relative timing. Then verify that it does.
 
@@ -223,7 +208,7 @@ def make_playback(src: Path, dst: Path, pts_start_ms: float, rotation: int | Non
         mode = "transcode"
         cmd = ["ffmpeg", "-y", "-v", "error", "-i", str(src), "-map", "0:v:0",
                "-vf", "setpts=PTS-STARTPTS,format=yuv420p",
-               *_passthrough_frames(), "-c:v", "libx264", "-preset", "veryfast", "-crf", "20"]
+               "-vsync", "0", "-c:v", "libx264", "-preset", "veryfast", "-crf", "20"]
         if stream.get("_audio"):
             cmd += ["-map", "0:a:0", "-af", "asetpts=PTS-STARTPTS", "-c:a", "aac", "-b:a", "96k"]
         cmd += ["-movflags", "+faststart", str(dst)]

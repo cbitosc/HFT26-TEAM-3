@@ -29,39 +29,15 @@
 
 ---
 
-# TraceLine — AI-assisted reconstruction of road-accident evidence
+> The project below is the team's **TraceLine** repository, taken as it is from https://github.com/Srihith007/CBIT-hackathon-basic- (`main`, commit `08356ab`). Its README follows unchanged.
 
-> **It supports an investigation. It never assigns fault.** Observations, reports and inferences are kept apart, uncertainty stays visible, and nothing is shown that was not found in the evidence.
+---
 
-**Live demo (frontend):** https://traceline-cbit.vercel.app — the API behind it currently runs on a team laptop, so the demo is available only while that laptop is online. The jury cases below are preloaded there.
+# TraceLine
 
-## 🎯 Problem Statement
-*Domain:* **General Track** — AI-Powered Timeline Reconstruction for Road Accident Forensics. Track selection in progress.
+AI-assisted reconstruction of road-accident evidence for the CBIT Hacktoberfest '26 hackathon. It combines video, witness statements and sensor records into a chronological timeline, identifies disagreements and gaps, and links conclusions to evidence. It supports an investigation; it does not assign fault.
 
-## 📌 Solution Overview
-Accident evidence is scattered across dashcams, CCTV, witness statements and vehicle sensor logs, each on its own clock. TraceLine lines these sources up on one timeline, detects and tracks road users in the video, flags **possible** accident moments, shows where sources agree or conflict, lists what evidence is missing, and produces a validated report.
-
-**Special features of this version**
-- **Detailed incident timeline:** event cards with thumbnails and Possible accident / Attention / Everything filters, plus a lane timeline, all following one playback clock.
-- **Automatic pause** at a possible accident, with the keyframe, the reason and the uncertainty, and an investigator decision that is kept separate from the machine's output.
-- **3D schematic incident view** (three.js): the stored tracks replayed in 3D with accident timestamps, a marker on the replay slider and in the scene. Positions are calibrated ground-plane metres when a camera is calibrated, otherwise an estimate with the assumptions stated on screen. It is a visual aid, not a measurement.
-- **Quick-brief report:** an at-a-glance summary and one block per incident (what is around that moment, why it was flagged, what is uncertain), then witness accounts versus the video, what is missing and next steps. The validated full report stays one click away.
-- **Automatic AI analysis (Featherless, opt-in):** when a case allows it, a grounded video narrative, a clearly-labelled *simulated* OBD series and witness-versus-video findings are produced in the background and validated against the stored tracks and frame times before they are shown.
-- **Redesigned landing page** with five different real recordings, each on its own clock, and a synchronised multi-camera example with measured offsets.
-
-## 🏗️ Architecture & Tech Stack
-| Layer | Technology |
-| :--- | :--- |
-| Frontend | React 18, Vite, Tailwind CSS, Framer Motion, Zustand, three.js (lazy-loaded) |
-| Backend | FastAPI, SQLAlchemy, Alembic, PostgreSQL (integrity triggers keep originals and the audit log immutable) |
-| Vision | YOLO26 detection, ByteTrack/BoT-SORT tracking, rule-based events, optional accident-cue model |
-| AI | Featherless (Qwen) for narrative and comparison, bound to the stored evidence and gated per case |
-| Hosting | Vercel (frontend) and Supabase (PostgreSQL); backend on a team machine behind a tunnel |
-
-See `docs/` for the architecture, data flow and evidence-integrity notes.
-
-## 🚀 Local Setup & Installation
-### Fresh clone: Windows, macOS or Linux
+## Fresh clone: Windows, macOS or Linux
 
 Requirements: **Python 3.11+**, **Node.js/npm**, and **PostgreSQL 16+**. FFmpeg/ffprobe and detection models are needed for video processing, but **not for creating a case**.
 
@@ -129,27 +105,26 @@ Check `http://127.0.0.1:8010/api/v1/health` (substitute your API port). `databas
 
 If it still fails, capture the **response body of `POST /api/v1/cases`** and the backend terminal error. Do not share `.env` or passwords.
 
-### Video processing and demo data
+## Video processing and demo data
 
 Install FFmpeg and ffprobe on your OS and put them on PATH. In `backend/`, use the virtual environment to install `requirements-vision.txt` and run `scripts/fetch_models.py` for pinned weights. The vision requirements use CPU wheels; macOS needs its platform's torch/torchvision wheels rather than Linux `+cpu` builds. These are separate from case creation.
 
 Optional synthetic scenarios can be generated with `scripts/build_scenarios.py`. See [the evidence workflow](docs/evidence-workflow.md) for witness review, vehicle matching, clock alignment and reconstruction updates. Tests require a **separate** PostgreSQL database in `TEST_DATABASE_URL`; the suite refuses to reset the development database.
 
-**Tests:** backend `cd backend && ./.venv/bin/python -m pytest -q` (279 passed, 20 skipped without datasets or weights); frontend `cd frontend && npx vitest run` (240 passed).
+## Project structure and limits
 
-## 📸 Key Screenshots
-| | |
-| :--- | :--- |
-| ![Detailed timeline](docs/screenshots/detailed-timeline.png) | ![3D incident view](docs/screenshots/3d-incident-view.png) |
-| ![Quick-brief report](docs/screenshots/quick-brief-report.png) | ![Landing page: five recordings](docs/screenshots/landing-five-recordings.jpg) |
+`backend/`: FastAPI/PostgreSQL pipeline and rules. `frontend/`: React workspace. `docs/`: architecture and workflows. `research/`: measured results. `data/`: local evidence and weights, excluded from Git.
 
-![Landing page: multi-source evidence](docs/screenshots/landing-evidence.jpg)
+Integration tests verify the workflow on controlled inputs. Accuracy on arbitrary real accident footage and complex witness language is not established by those tests. See `docs/RISKS_AND_LIMITATIONS.md`.
 
-## ⚠️ Limits and honesty
-Detector and rule accuracy on arbitrary real footage is **not established**; the thresholds are untuned heuristics. A possible collision is never a confirmed collision. 3D positions are estimates unless a camera is calibrated. The AI narrative is a visual aid and can miss events that the detection-based analysis flags. See `docs/RISKS_AND_LIMITATIONS.md`.
+## Prepared jury cases
 
-## 🎞️ Data credits
-Demo footage: ACCIDENT benchmark (Picek et al., CVPR Workshops 2026, accidentbench.github.io) and the TUM Traffic Accid3nD dataset (Zimmer et al., arXiv:2503.12095), both CC BY-NC-SA 4.0, used for non-commercial demonstration and credited where shown. API keys are never committed; copy `.env.example` to `.env` and set your own.
+The planned collection is **three videos, two cases per video (six total)**. Video 01 is included under `demo-cases/video-01/`: one matching witness case and one conflicting witness case, with identical original footage and simulated sensor CSVs. Generated evidence is labeled and separate from the original video.
 
-## 👥 Team
-4Guys1Project (TEAM-3): J. Sanjeeth Manivandan (leader), Srihith Mucharla, Meganath Baboori, Rithvik Kesarla.
+After starting the API with video dependencies/weights installed, preload the current pair once:
+
+```sh
+backend/.venv/bin/python backend/scripts/load_jury_cases.py --api http://127.0.0.1:8010/api/v1
+```
+
+Use your API port if different; on Windows use `backend\.venv\Scripts\python.exe`. The importer verifies expected findings and skips already loaded complete case codes. Cases remain in PostgreSQL between app runs. Future pairs can be added without re-entering the prepared cases during the presentation. See `demo-cases/video-01/README.md` for assumptions and the attributed human review used for the fall-denial comparison.

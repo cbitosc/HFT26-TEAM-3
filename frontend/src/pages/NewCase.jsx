@@ -29,7 +29,7 @@ function Stepper({ step }) {
 
 /** Step 1. Creates the case. Incident time (with the time zone offset you choose) and location are stored by the backend. */
 function Details({ initial, onCreated }) {
-  const [f, setF] = useState({ title: initial.title, designation: initial.designation, incident_at: '', location: '', description: '', reference: '', allow_external_inference: true });
+  const [f, setF] = useState({ title: initial.title, designation: initial.designation, incident_at: '', location: '', description: '', reference: '', allow_external_inference: false });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
   const refErr = f.reference && !REF.test(f.reference) ? 'Use 3 to 40 letters, digits, dash or underscore.' : undefined;
@@ -59,7 +59,7 @@ function Details({ initial, onCreated }) {
       </div>
       <Field label="Description" optional><Textarea rows={3} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} disabled={busy} /></Field>
       <Field label="Reference" optional error={refErr} hint="Used as the case code if given, for example your report number."><Input value={f.reference} onChange={(e) => setF({ ...f, reference: e.target.value })} disabled={busy} /></Field>
-      <Checkbox label="Analyse with Featherless AI: allow selected accident frames and witness text to be sent to it (on by default; untick to keep everything on this machine)" checked={f.allow_external_inference} onChange={(e) => setF({ ...f, allow_external_inference: e.target.checked })} disabled={busy} />
+      <Checkbox label="Allow selected accident frames and evidence text to be sent to Featherless AI" checked={f.allow_external_inference} onChange={(e) => setF({ ...f, allow_external_inference: e.target.checked })} disabled={busy} />
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" variant="primary" loading={busy} disabled={!f.title.trim() || !!refErr}>Create investigation</Button>
         {f.designation === 'synthetic' && <Badge variant="warning">will be labelled synthetic</Badge>}

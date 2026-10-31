@@ -12,7 +12,6 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.api.deps import get_factory
 from app.config import get_settings
-from app.services.video import _passthrough_frames
 from app.db import get_db
 from app.main import app
 
@@ -73,8 +72,7 @@ def client(engine, tmp_path):
     factory = sessionmaker(bind=engine, expire_on_commit=False, future=True)
     real = settings_dep()
     settings = real.model_copy(update={"storage_root": tmp_path / "store", "max_video_mb": 5, "max_other_mb": 1,
-                                       "models_dir": real.models_path,
-                                       "featherless_api_key": None, "featherless_api_key_fallback": None})  # pinned weights are shared, read-only; tests never see or spend real keys from .env
+                                       "models_dir": real.models_path})  # pinned weights are shared, read-only
 
     def db_dep():
         with factory() as s:
@@ -107,7 +105,7 @@ def gappy_video(tmp_path_factory) -> Path:
     """4 s at 15 fps with frames 20-35 removed while keeping the original timestamps (about a 1 s gap)."""
     d = tmp_path_factory.mktemp("gappy")
     return _ffmpeg(["-f", "lavfi", "-i", "testsrc=duration=4:size=320x240:rate=15", "-vf", "select='not(between(n,20,35))'",
-                    *_passthrough_frames(), "-pix_fmt", "yuv420p", "-c:v", "libx264"], d / "gappy.mp4")
+                    "-vsync", "0", "-pix_fmt", "yuv420p", "-c:v", "libx264"], d / "gappy.mp4")
 
 
 @pytest.fixture(scope="session")
@@ -115,7 +113,7 @@ def offset_video(tmp_path_factory) -> Path:
     """2 s at 15 fps whose first frame is stamped ~2.5 s into the container timeline."""
     d = tmp_path_factory.mktemp("offset")
     return _ffmpeg(["-f", "lavfi", "-i", "testsrc=duration=2:size=320x240:rate=15", "-vf", "setpts=PTS+2.5/TB",
-                    *_passthrough_frames(), "-pix_fmt", "yuv420p", "-c:v", "libx264"], d / "offset.mp4")
+                    "-vsync", "0", "-pix_fmt", "yuv420p", "-c:v", "libx264"], d / "offset.mp4")
 
 
 @pytest.fixture(scope="session")

@@ -8,7 +8,6 @@ import DesignationBadge from '../components/DesignationBadge';
 import { api } from '../api';
 import { useCaseContext } from '../caseContext';
 import { effectiveDesignation } from '../lib/overview';
-import ReportBrief from '../components/ReportBrief';
 
 /** The backend has two report formats. "Executive" is its `investigator` format (four sections). "Technical" is its `full` export (sixteen sections). */
 export const KINDS = {
@@ -22,7 +21,6 @@ export default function ReportPage() {
   const { caseId } = useParams();
   const select = useCaseContext((s) => s.select);
   const [state, setState] = useState({ status: 'loading' });
-  const [mode, setMode] = useState('brief');
   const [kind, setKind] = useState('executive');
   const [openId, setOpenId] = useState(null);
   const [md, setMd] = useState('');
@@ -70,9 +68,6 @@ export default function ReportPage() {
       <p className="t-small mb-3 text-fg-2"><span className="font-medium text-fg">{c.title}</span> <span className="mono text-fg-3">{c.code}</span></p>
       <CaseBanner designation={c.designation} warning={eff.warning} />
 
-      <div className="mb-4 print:hidden"><Segmented label="Report view" value={mode} onChange={setMode} options={[{ id: 'brief', label: 'Quick brief' }, { id: 'full', label: 'Full report' }]} /></div>
-      {mode === 'brief' ? <ReportBrief c={c} ev={ev} scenarios={scenarios} /> : (
-        <>
       <Card className="mb-6 space-y-3">
         <div className="flex flex-wrap items-center gap-3">
           <Segmented label="Report type" value={kind} onChange={(k) => { setKind(k); setOpenId(null); }} options={Object.entries(KINDS).map(([id, k]) => ({ id, label: k.label }))} />
@@ -131,8 +126,6 @@ export default function ReportPage() {
           <p className="t-caption mt-3 text-fg-3"><Link to={`/reconstruction/${c.id}`}>Back to the workspace</Link></p>
         </aside>
       </div>
-        </>
-      )}
     </Shell>
   );
 }

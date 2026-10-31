@@ -1,13 +1,12 @@
 from datetime import datetime, timezone
 from typing import Literal
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_actor, get_case, get_factory
-from app.config import Settings, get_settings
+from app.api.deps import get_actor, get_case
 from app.db import get_db
 from app.errors import AppError
 from app.models import (Actor, Case, ClockRecord, Contradiction, Corroboration, Event, EventSummary, EvidenceFile, ExtractedFrame, GapRecord,
@@ -50,8 +49,7 @@ class ScenarioBody(BaseModel):
 
 
 @router.post("/cases/{case_id}/reconstruction/scenarios", status_code=201)
-def create_scenario(body: ScenarioBody, background: BackgroundTasks, case: Case = Depends(get_case), db: Session = Depends(get_db), who: str = Depends(get_actor),
-                    settings: Settings = Depends(get_settings), factory=Depends(get_factory)) -> dict:
+def create_scenario(body: ScenarioBody, case: Case = Depends(get_case), db: Session = Depends(get_db), who: str = Depends(get_actor)) -> dict:
     """Build a reconstruction. Scenarios are independent; the first one is the baseline. Evidence and other scenarios are never modified."""
     has = db.execute(select(ReconstructionScenario.id).where(ReconstructionScenario.case_id == case.id)).first() is not None
     scn = ReconstructionScenario(case_id=case.id, name=body.name, is_baseline=(not has) if body.baseline is None else body.baseline, created_by=who,
@@ -65,10 +63,6 @@ def create_scenario(body: ScenarioBody, background: BackgroundTasks, case: Case 
     reconstruct.build(db, case, scn, who)
     scn.assumptions = (scn.assumptions or {}) | {"input_fingerprint": readiness.fingerprint(db, case.id)}
     db.commit()
-    if case.allow_external_inference and settings.featherless_configured:
-        # the AI analysis of this case starts by itself once its reconstruction exists (nothing is sent unless the case allows it)
-        from app.api.featherless_analysis import auto_generate
-        background.add_task(auto_generate, case.id, factory, settings)
     return scenario_out(scn) | {"note": NOTE}
 
 
