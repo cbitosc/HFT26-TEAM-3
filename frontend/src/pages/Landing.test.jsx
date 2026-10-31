@@ -5,7 +5,7 @@ import { LinkProvider, ThemeProvider } from '../ui-kit';
 import { Link } from 'react-router-dom';
 import Landing from './Landing';
 import { EVENTS, mapToClip } from '../landing/data';
-import { DEMO_VIDEO, START_ROUTE } from '../landing/config';
+import { MULTI_SOURCE, START_ROUTE } from '../landing/config';
 
 const renderLanding = () => render(<ThemeProvider defaultTheme="ember" storageKey="t"><MemoryRouter><LinkProvider component={Link} prop="to"><Landing /></LinkProvider></MemoryRouter></ThemeProvider>);
 
@@ -22,9 +22,20 @@ describe('landing page', () => {
   it('has the four navigation items and credits the demo clip, labelling the overlay as illustrative', () => {
     renderLanding();
     const nav = within(screen.getByRole('navigation', { name: 'Landing sections' }));
-    expect(nav.getAllByRole('link').map((l) => l.textContent)).toEqual(['Product', 'How it works', 'Capabilities', 'About']);
-    expect(screen.getAllByText(DEMO_VIDEO.attribution).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Illustrative demo overlay/)).toBeInTheDocument();
+    expect(nav.getAllByRole('link').map((l) => l.textContent)).toEqual(['Problem', 'How it works', 'Evidence', 'Timeline', 'Contradictions', 'Report']);
+    expect(screen.getAllByText(MULTI_SOURCE.attribution).length).toBeGreaterThan(0);
+    expect(screen.getByText(/no crash is located in this window/i)).toBeInTheDocument();
+    expect(screen.getAllByRole('figure')).toHaveLength(5);
+  });
+});
+
+describe('product explanation', () => {
+  it('states what is being built and the problem it addresses', () => {
+    renderLanding();
+    expect(screen.getByText(/combines footage from multiple cameras and sources into one synchronized accident timeline/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /never in one place/ })).toBeInTheDocument();
+    expect(screen.getByText('Align every source on one clock')).toBeInTheDocument();
+    expect(screen.getAllByText(/never decides fault/).length).toBeGreaterThan(0);
   });
 });
 

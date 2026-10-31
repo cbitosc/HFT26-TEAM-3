@@ -5,6 +5,8 @@ import Defer from '../landing/Defer';
 import LandingNavbar from '../landing/LandingNavbar';
 import HeroSection from '../landing/HeroSection';
 import DemoVideoSection from '../landing/DemoVideoSection';
+import ProblemSection from '../landing/ProblemSection';
+import HowItWorksSection from '../landing/HowItWorksSection';
 import LandingFooter from '../landing/LandingFooter';
 
 const ReconstructionTimelineSection = lazy(() => import('../landing/ReconstructionTimelineSection'));
@@ -26,9 +28,11 @@ export default function Landing() {
         <LandingNavbar />
         <main>
           <HeroSection />
+          <ProblemSection />
+          <HowItWorksSection />
           <DemoVideoSection />
-          <Defer id="how-it-works" minHeight={1900}><ReconstructionTimelineSection /></Defer>
-          <Defer id="capabilities" minHeight={1050}><EvidenceCorrelationSection /></Defer>
+          <Defer id="timeline" minHeight={1900}><ReconstructionTimelineSection /></Defer>
+          <Defer id="correlation" minHeight={1050}><EvidenceCorrelationSection /></Defer>
           <Defer id="contradictions" minHeight={1750}><ContradictionsSection /></Defer>
           <Defer id="report" minHeight={1290}><InvestigationReportSection /></Defer>
           <Defer id="cta" minHeight={440}><FinalCTA /></Defer>

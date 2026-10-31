@@ -17,7 +17,10 @@ export function DemoVideoProvider({ children }) {
   }, []);
 
   const seek = useCallback((t) => {
-    videos.current.forEach((v) => { try { v.currentTime = t; } catch { /* metadata not ready */ } });
+    videos.current.forEach((v, key) => {
+      const target = key.startsWith('free') && Number.isFinite(v.duration) ? Math.min(t, Math.max(0, v.duration - 0.05)) : t;
+      try { v.currentTime = target; } catch { /* metadata not ready */ }
+    });
     setTime(t);
   }, []);
 

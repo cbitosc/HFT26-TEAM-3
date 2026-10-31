@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, useInView, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion';
 import { Camera, FileText, Route as RouteIcon, ScanSearch } from 'lucide-react';
-import { DEMO_VIDEO } from './config';
+import { MULTI_SOURCE } from './config';
 import { EVENTS, fmtTime, mapToClip } from './data';
 import { Label, Reveal } from './primitives';
 import { useDemoVideo } from './VideoContext';
@@ -12,22 +12,23 @@ function Preview({ active }) {
   const [failed, setFailed] = useState(false);
   const { register } = v;
   useEffect(() => { register('preview', ref.current); return () => register('preview', null); }, [register]);
+  const cam = MULTI_SOURCE.cameras[1];
   const mapped = mapToClip(active.t, v.duration);
   return (
     <div className="tl-preview">
       <div className="tl-preview-frame">
         {failed ? <div className="tl-vstate tl-vstate-err"><span>Preview unavailable</span></div> : (
-          <video ref={ref} src={DEMO_VIDEO.src} poster={DEMO_VIDEO.poster} muted playsInline preload="metadata" aria-label="Contextual preview of the demo recording"
+          <video ref={ref} src={cam.src} poster={cam.poster} muted playsInline preload="metadata" aria-label={`Contextual preview, ${cam.name}`}
             onLoadedMetadata={(e) => v.setDuration(e.currentTarget.duration)} onError={() => setFailed(true)} />
         )}
         <div className="tl-vignette" aria-hidden />
-        <span className="tl-cam">{DEMO_VIDEO.camera}</span>
+        <span className="tl-cam">{cam.name}</span>
       </div>
       <dl className="tl-preview-meta tl-mono">
         <div><dt>Event time (illustrative)</dt><dd>{active.ts}</dd></div>
         <div><dt>Clip position</dt><dd>{mapped == null ? 'n/a' : fmtTime(mapped)} / {fmtTime(v.duration)}</dd></div>
       </dl>
-      <p className="tl-note">The example events span 16.2 s and the demo clip is {v.duration ? `${v.duration.toFixed(1)} s` : 'shorter'}, so selecting an event seeks to a proportionally mapped, clamped position. It does not show the described event.</p>
+      <p className="tl-note">The example events span 16.2 s and this window is {v.duration ? `${v.duration.toFixed(1)} s` : 'shorter'}, so selecting an event seeks every camera to a proportionally mapped, clamped position. The footage does not show the described event, and no crash is located in this window.</p>
     </div>
   );
 }
@@ -84,9 +85,9 @@ export default function ReconstructionTimelineSection() {
     <section className="tl-section tl-tl" aria-labelledby="tl-tl-h">
       <div className="tl-wrap">
         <Reveal className="tl-sec-head">
-          <Label>RECONSTRUCTION</Label>
+          <Label>SYNCHRONIZED TIMELINE</Label>
           <h2 id="tl-tl-h">One clock.<br /><span>Every moment in order.</span></h2>
-          <p>Scroll to follow the sequence. Each event keeps its source, its tracks and its review status. Select one to jump the recording to that point.</p>
+          <p>Once the sources share a clock, the reconstruction reads as a chronology. Each event keeps its source, its tracks and its review status. Select one to jump the cameras to that point.</p>
           <p className="tl-illus">Illustrative example, not a real accident.</p>
         </Reveal>
         <div className="tl-tl-grid">

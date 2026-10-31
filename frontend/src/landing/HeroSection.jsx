@@ -58,13 +58,15 @@ export default function HeroSection() {
       <motion.div className="tl-hero-copy tl-wrap" style={{ y: yCopy, opacity: fade }}>
         <motion.p className="tl-label" {...item(0)}><i aria-hidden />AI-POWERED ACCIDENT INVESTIGATION</motion.p>
         <motion.h1 id="tl-hero-h" {...item(1)}>Reconstruct{' '}<br />What Really{' '}<br /><em>Happened.</em></motion.h1>
+        <motion.p className="tl-what" {...item(2)}>TraceLine combines footage from multiple cameras and sources into one synchronized accident timeline.</motion.p>
         <motion.p className="tl-lede" {...item(2)}>Turn fragmented accident evidence into a chronological, traceable reconstruction.</motion.p>
+        <motion.ul className="tl-srcs" aria-label="Evidence sources" {...item(3)}><li>Dashcam</li><li>CCTV</li><li>Phone</li><li>Witness</li><li>Sensor</li><li className="tl-srcs-to" aria-hidden>→ one clock → one timeline</li></motion.ul>
         <motion.div className="tl-cta-row" {...item(3)}>
-          <Button as="a" href="#product" variant="primary" size="lg" rightIcon={ArrowDown} onClick={(e) => { e.preventDefault(); scrollToId('product', reduce); }}>Explore the reconstruction</Button>
+          <Button as="a" href="#evidence" variant="primary" size="lg" rightIcon={ArrowDown} onClick={(e) => { e.preventDefault(); scrollToId('evidence', reduce); }}>Explore the reconstruction</Button>
           <Button as={Link} to={START_ROUTE} variant="outline" size="lg" rightIcon={ArrowUpRight}>Start an investigation</Button>
         </motion.div>
         <motion.div className="tl-hero-meta" {...item(4)} aria-hidden>
-          <span>CAM 01</span><span>T+ <Clock /></span><span>TRACKS 02</span><span>ILLUSTRATIVE</span>
+          <span>5 SOURCES</span><span>T+ <Clock /></span><span>1 CLOCK</span><span>ILLUSTRATIVE</span>
         </motion.div>
       </motion.div>
     </section>

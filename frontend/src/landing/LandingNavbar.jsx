@@ -5,7 +5,7 @@ import { ArrowUpRight, Menu, X } from 'lucide-react';
 import { Brand, Button, ThemeSwitcher } from '../ui-kit';
 import { NAV_ITEMS, START_ROUTE } from './config';
 
-const SECTION_TO_NAV = { top: null, product: 'product', 'how-it-works': 'how-it-works', capabilities: 'capabilities', contradictions: 'capabilities', report: 'capabilities', cta: 'about', about: 'about' };
+const SECTION_TO_NAV = { top: null, problem: 'problem', 'how-it-works': 'how-it-works', evidence: 'evidence', timeline: 'timeline', correlation: 'contradictions', contradictions: 'contradictions', report: 'report', cta: null, about: null };
 
 export function scrollToId(id, reduce) {
   const el = document.getElementById(id);
