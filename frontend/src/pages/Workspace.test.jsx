@@ -60,14 +60,14 @@ let board = { scenario_id: 'scn_1', ordering: 'per_source_media_time', note: 'Ca
 beforeEach(() => { board = { scenario_id: 'scn_1', ordering: 'per_source_media_time', note: 'Cameras are not interleaved.', strips: [], omitted: [] }; vi.clearAllMocks(); localStorage.clear(); useWorkspace.getState().reset('case_1', 'scn_1'); });
 
 describe('guided reconstruction layout', () => {
-  it('prioritizes video, chapters and a concise moment; advanced tools are on demand', async () => {
+  it('prioritizes video, the open detailed timeline and a concise moment; advanced tools are on demand', async () => {
     setup();
     await screen.findByLabelText('Incident summary');
     expect(screen.getByLabelText('Evidence video')).toBeInTheDocument();
-    expect(screen.getByLabelText('Incident chapters')).toBeInTheDocument();
+    expect(screen.getByLabelText('Timeline')).toBeInTheDocument();  // the detailed timeline is shown, not folded away
     expect(screen.getByLabelText('This moment')).toBeInTheDocument();
     expect(screen.queryByRole('tab', {name:'Technical'})).toBeNull();
-    expect(screen.getByLabelText('Detailed timeline').open).toBe(false);
+    expect(screen.queryByLabelText('Detailed timeline')).toBeNull();
     fireEvent.click(screen.getByRole('button', {name:'Advanced details'}));
     expect(await screen.findByRole('dialog', {name:'Advanced investigation'})).toBeInTheDocument();
     expect(screen.getByRole('tab', {name:'Technical'})).toBeInTheDocument();
@@ -76,7 +76,6 @@ describe('guided reconstruction layout', () => {
 
 async function detailedView() {
   await screen.findByLabelText('Incident summary');
-  fireEvent.click(screen.getByText('Detailed timeline', {selector:'span'}));
   fireEvent.click(screen.getByText('Reconstruction assumptions', {selector:'span'}));
   fireEvent.click(screen.getByText('Key findings & open questions', {selector:'span'}));
 }
@@ -91,7 +90,7 @@ describe('camera filter', () => {
   it('limits the timeline cards and key observations to one camera and restores them', async () => {
     setup();
     await detailedView();
-    const obs = () => screen.getByLabelText('Incident chapters');
+    const obs = () => screen.getByLabelText('Timeline');
     expect(obs()).toHaveTextContent('North vehicle slows');
     expect(obs()).toHaveTextContent('South vehicle slows');
     fireEvent.click(within(screen.getByRole('group', { name: 'Camera filter' })).getByRole('button', { name: 'South camera' }));

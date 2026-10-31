@@ -1,5 +1,6 @@
 """Opt-in Featherless analysis layered over, never replacing, the stored reconstruction."""
 import json
+import threading
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import Response
@@ -43,6 +44,27 @@ RUNNING: set[str] = set()
 FAILED: dict[str, str] = {}
 
 
+# Featherless limits how many requests may run at once; several analyses (every new case starts one) must take turns or replies come back cut off.
+_CALL_LOCK=threading.Lock()
+
+
+def _ask(client,db,*,case,model,messages,purpose,input_ref,max_tokens,settings,parse):
+    """One model call whose JSON is validated. If the reply is cut off or breaks a rule, ask once more with more room and a stricter hint
+    (a different prompt, so it is not served from the cache). The last failure is raised."""
+    last=None
+    for attempt in range(2):
+        msgs=messages if attempt==0 else messages+[{"role":"user","content":"Your previous reply was cut off or broke a rule. Return only the JSON object, shorter, with every text field under 25 words, and follow the row/timestamp requirements exactly."}]
+        with _CALL_LOCK:
+            res=client.chat(db,case=case,model=model,messages=msgs,purpose=purpose,input_ref=input_ref,response_format={"type":"json_object"},max_tokens=max_tokens*(attempt+1),extra_body=_extra(settings))
+        try:
+            parsed=parse(res.content)
+        except (ValueError,json.JSONDecodeError) as exc:
+            client.record_validation(db,res.call_id,False); last=exc; continue
+        client.record_validation(db,res.call_id,True)
+        return res,parsed
+    raise last
+
+
 @router.get("/cases/{case_id}/featherless-analysis")
 def read(case:Case=Depends(get_case),db:Session=Depends(get_db)):
     item=_latest(db,case.id)
@@ -78,16 +100,15 @@ def generate(case:Case=Depends(get_case),db:Session=Depends(get_db),settings:Set
     if not frames: raise AppError(409,"FRAMES_REQUIRED","No processed video frames are available for Featherless analysis")
     allowed_times={f.time_ms for f in frames}; client=make_client(settings)
     try:
-        first=client.chat(db,case=case,model=settings.featherless_vision_model,messages=[{"role":"user","content":content}],purpose="grounded_video_narrative",
-            input_ref={"case_id":case.id,"scenario_id":scenario.id,"video_sha256":video.sha256,"frames":[f.frame_no for f in frames]},response_format={"type":"json_object"},max_tokens=1800,extra_body=_extra(settings))
-        narrative=fa.parse_narrative(first.content,duration_ms=vm.duration_ms,allowed_times=allowed_times,allowed_tracks=allowed_tracks); client.record_validation(db,first.call_id,True)
+        first,narrative=_ask(client,db,case=case,model=settings.featherless_vision_model,messages=[{"role":"user","content":content}],purpose="grounded_video_narrative",
+            input_ref={"case_id":case.id,"scenario_id":scenario.id,"video_sha256":video.sha256,"frames":[f.frame_no for f in frames]},max_tokens=1800,settings=settings,
+            parse=lambda c:fa.parse_narrative(c,duration_ms=vm.duration_ms,allowed_times=allowed_times,allowed_tracks=allowed_tracks))
         main_tracks=[x for e in narrative["events"] for x in e["track_ids"]]; main_track=main_tracks[0] if main_tracks else next(iter(allowed_tracks))
         obd_times=list(range(0,vm.duration_ms+1,1000))
         if obd_times[-1] != vm.duration_ms: obd_times.append(vm.duration_ms)
         obd_input={"duration_ms":vm.duration_ms,"vehicle_track_id":main_track,"required_timestamps_ms":obd_times,"narrative":narrative}
-        second=client.chat(db,case=case,model=settings.featherless_text_model,messages=[{"role":"system","content":fa.OBD_PROMPT},{"role":"user","content":json.dumps(obd_input)}],purpose="simulated_obd_generation",
-            input_ref={"case_id":case.id,"obd_input":obd_input},response_format={"type":"json_object"},max_tokens=1600,extra_body=_extra(settings))
-        obd=fa.parse_obd(second.content,duration_ms=vm.duration_ms,allowed_tracks=allowed_tracks); client.record_validation(db,second.call_id,True)
+        second,obd=_ask(client,db,case=case,model=settings.featherless_text_model,messages=[{"role":"system","content":fa.OBD_PROMPT},{"role":"user","content":json.dumps(obd_input)}],purpose="simulated_obd_generation",
+            input_ref={"case_id":case.id,"obd_input":obd_input},max_tokens=1600,settings=settings,parse=lambda c:fa.parse_obd(c,duration_ms=vm.duration_ms,allowed_tracks=allowed_tracks))
         witnesses=[]
         for witness in db.execute(select(Witness).where(Witness.case_id==case.id)).scalars():
             for statement in db.execute(select(WitnessStatement).where(WitnessStatement.witness_id==witness.id)).scalars():
@@ -95,17 +116,13 @@ def generate(case:Case=Depends(get_case),db:Session=Depends(get_db),settings:Set
         bundle={"case_id":case.id,"scenario_id":scenario.id,"evidence_id":video.id,"model":settings.featherless_vision_model,"narrative":narrative,"simulated_obd":obd,
                 "witnesses":witnesses,"frames":[{"frame_no":f.frame_no,"time_ms":f.time_ms} for f in frames],"generated_by":"featherless","fallback_preserved":True}
         allowed_refs={("video_narrative",e["id"]) for e in narrative["events"]}|{("witness",w["id"]) for w in witnesses}|{("simulated_obd","simulated_obd")}
-        third=client.chat(db,case=case,model=settings.featherless_text_model,messages=[{"role":"system","content":fa.COMPARE_PROMPT},{"role":"user","content":json.dumps(bundle)}],purpose="case_evidence_comparison",
-            input_ref={"case_id":case.id,"bundle":bundle},response_format={"type":"json_object"},max_tokens=1800,extra_body=_extra(settings))
-        findings=fa.parse_findings(third.content,duration_ms=vm.duration_ms,allowed_refs=allowed_refs); client.record_validation(db,third.call_id,True)
+        third,findings=_ask(client,db,case=case,model=settings.featherless_text_model,messages=[{"role":"system","content":fa.COMPARE_PROMPT},{"role":"user","content":json.dumps(bundle)}],purpose="case_evidence_comparison",
+            input_ref={"case_id":case.id,"bundle":bundle},max_tokens=1800,settings=settings,parse=lambda c:fa.parse_findings(c,duration_ms=vm.duration_ms,allowed_refs=allowed_refs))
         third_row=db.get(LlmCall,third.call_id)
         if third_row:
             prior=third_row.response or {}
             third_row.response={**prior,"content":json.dumps({"findings":findings})}
     except (ValueError,json.JSONDecodeError) as exc:
-        if 'first' in locals(): client.record_validation(db,first.call_id,False)
-        if 'second' in locals(): client.record_validation(db,second.call_id,False)
-        if 'third' in locals(): client.record_validation(db,third.call_id,False)
         db.commit(); raise AppError(502,"FEATHERLESS_OUTPUT_INVALID",str(exc))
     except (PolicyBlocked,NotConfigured,LlmError) as exc:
         db.commit(); raise AppError(503,"FEATHERLESS_UNAVAILABLE",str(exc))

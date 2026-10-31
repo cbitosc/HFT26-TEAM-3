@@ -1,4 +1,4 @@
-import { ChapterStrip, ThisMoment, storyChapters } from '../components/ReconstructionStory';
+import { ThisMoment, storyChapters } from '../components/ReconstructionStory';
 import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Alert, Badge, Button, Checkbox, Drawer, ErrorState, IconButton, LoadingState, ProgressBar, SectionHeader, Select, Tabs, useToast } from '../ui-kit';
@@ -411,11 +411,11 @@ export default function Workspace() {
                 <Player cues={cues} videos={videos} shifts={shifts} trackActors={trackActors} actorLabels={actorLabels} range={range} events={playerEvents} onSelectEvent={(e) => { pick(e); setTab('overview'); }} />
                 <p className="t-caption mt-2 text-fg-3" title="Percentages on boxes are the detector's score for that box, not the chance of an event. Nothing is drawn between sampled frames.">Stored detections on sampled frames ({analysis ? ANALYSIS_LABEL[analysis.detection].toLowerCase() : ''}). Hover for what box labels mean.</p>
               </Panel>
-              <ChapterStrip chapters={chapters} activeId={activeId} onPick={(e) => { pick(e); }} />
-              <details className="recon-disclosure" aria-label="Detailed timeline"><summary><span>Detailed timeline</span><small>All recorded events & source clocks</small></summary><div className="recon-disclosure-body">
+              <Panel as="section" className="p-5" aria-label="Timeline">
+                <SectionHeader title="Timeline" description={`${shown.items.length} incident events · ${shown.keyEvents.length} key events of ${events.length} placed · times on the case clock`} className="!mb-3" />
                 <IncidentSequence events={shown.keyEvents} unplaced={data.tl.unplaced || []} board={board} activeId={activeId} nameOf={nameOf} caseId={caseId} onSelect={pick} onSeekFrame={seekToFrame} onOpenFrame={(e) => openTrail('frame', e)} />
                 <Timeline tl={shown.tl} gaps={shown.gaps} overlaps={shown.overlaps} onSelect={pick} onSeek={seekTo} />
-              </div></details>
+              </Panel>
             </div>
 
             <ThisMoment event={momentEvent} nameOf={nameOf} questions={executive?.questions} onPlay={pick} onDetails={(e) => { pick(e); showInspector('event'); }} onEvidence={(e) => { pick(e); showInspector('evidence'); }} />

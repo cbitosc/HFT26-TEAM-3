@@ -93,3 +93,56 @@ def test_building_a_reconstruction_starts_the_analysis_for_an_allowed_case_only(
     assert started == []
     assert client.post(f"/api/v1/cases/{on}/reconstruction/scenarios", json={"name": "Baseline"}).status_code == 201
     assert started == [on]
+
+
+def test_a_cut_off_reply_is_retried_once_with_more_room_and_a_stricter_hint(client):
+    import json as _json
+
+    from app.models import Case
+
+    class Res:
+        def __init__(self, content, call_id):
+            self.content, self.call_id = content, call_id
+
+    class Fake:
+        def __init__(self):
+            self.sent, self.valid = [], {}
+
+        def chat(self, db, **kw):
+            self.sent.append((kw["max_tokens"], len(kw["messages"])))
+            n = len(self.sent)
+            return Res('{"ok": 1' if n == 1 else '{"ok": 1}', n)  # the first reply is cut off
+
+        def record_validation(self, db, call_id, ok):
+            self.valid[call_id] = ok
+
+    cid = _case(client, True)
+    fake = Fake()
+    with client.factory() as db:
+        res, parsed = api_fa._ask(fake, db, case=db.get(Case, cid), model="m", messages=[{"role": "user", "content": "x"}], purpose="t", input_ref={"a": 1},
+                                  max_tokens=100, settings=client.settings, parse=lambda c: fa_parse(c))
+    assert parsed == {"ok": 1} and fake.sent == [(100, 1), (200, 2)] and fake.valid == {1: False, 2: True}
+
+
+def fa_parse(content):
+    import json as _json
+
+    return _json.loads(content)
+
+
+def test_two_bad_replies_raise_the_last_error(client):
+    from app.models import Case
+
+    class Res:
+        content, call_id = "{broken", 1
+
+    class Fake:
+        def chat(self, db, **kw):
+            return Res()
+
+        def record_validation(self, db, call_id, ok):
+            pass
+
+    cid = _case(client, True)
+    with client.factory() as db, pytest.raises(ValueError):
+        api_fa._ask(Fake(), db, case=db.get(Case, cid), model="m", messages=[], purpose="t", input_ref={}, max_tokens=10, settings=client.settings, parse=fa_parse)
