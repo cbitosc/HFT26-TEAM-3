@@ -393,3 +393,11 @@
   .tl-tile-clock { font-size: 9.5px; left: 6px; bottom: 6px; }
   .tl-stage-note { font-size: 11.5px; }
 }
+
+/* Five independent recordings: three on the first row, two on the second */
+.tl-rec-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1px; background: var(--l-line); }
+.tl-rec-grid > .tl-tile:nth-child(-n+3) { grid-column: span 2; }
+.tl-rec-grid > .tl-tile:nth-child(n+4) { grid-column: span 3; }
+.tl-rec-play { position: absolute; right: 10px; bottom: 8px; width: 32px; height: 32px; border-radius: 9999px; background: rgba(7, 9, 11, .66); color: #fff; display: grid; place-items: center; border: 1px solid rgba(255, 255, 255, .25); }
+.tl-rec-play:hover { background: rgb(var(--accent) / .85); }
+@media (max-width: 900px) { .tl-rec-grid { grid-template-columns: 1fr; } .tl-rec-grid > .tl-tile:nth-child(n) { grid-column: auto; } }

@@ -100,6 +100,9 @@ export default function ReconstructionTimelineSection() {
             </ol>
           </div>
         </div>
+        <p className="tl-credit">
+          Preview footage: <a href={MULTI_SOURCE.attributionUrl} target="_blank" rel="noreferrer noopener">{MULTI_SOURCE.attribution}</a> ({MULTI_SOURCE.cameras[1].name}). {MULTI_SOURCE.attributionLong} Offsets in the table above are measured from the dataset's per-frame timestamps.
+        </p>
       </div>
     </section>
   );

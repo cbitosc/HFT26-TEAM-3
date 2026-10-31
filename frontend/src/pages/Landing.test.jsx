@@ -5,7 +5,7 @@ import { LinkProvider, ThemeProvider } from '../ui-kit';
 import { Link } from 'react-router-dom';
 import Landing from './Landing';
 import { EVENTS, mapToClip } from '../landing/data';
-import { MULTI_SOURCE, START_ROUTE } from '../landing/config';
+import { MULTI_SOURCE, RECORDINGS, START_ROUTE } from '../landing/config';
 
 const renderLanding = () => render(<ThemeProvider defaultTheme="ember" storageKey="t"><MemoryRouter><LinkProvider component={Link} prop="to"><Landing /></LinkProvider></MemoryRouter></ThemeProvider>);
 
@@ -23,9 +23,22 @@ describe('landing page', () => {
     renderLanding();
     const nav = within(screen.getByRole('navigation', { name: 'Landing sections' }));
     expect(nav.getAllByRole('link').map((l) => l.textContent)).toEqual(['Problem', 'How it works', 'Evidence', 'Timeline', 'Contradictions', 'Report']);
-    expect(screen.getAllByText(MULTI_SOURCE.attribution).length).toBeGreaterThan(0);
-    expect(screen.getByText(/no crash is located in this window/i)).toBeInTheDocument();
+    expect(screen.getAllByText(new RegExp(MULTI_SOURCE.attribution)).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(new RegExp('ACCIDENT benchmark')).length).toBeGreaterThan(0);
+    expect(screen.getByText(/crash is not located in these 12-second windows/i)).toBeInTheDocument();
     expect(screen.getAllByRole('figure')).toHaveLength(5);
+  });
+});
+
+describe('five recordings', () => {
+  it('shows five different recordings, none claimed to share a clock', () => {
+    renderLanding();
+    expect(new Set(RECORDINGS.clips.map((c) => c.src)).size).toBe(5);
+    expect(new Set(RECORDINGS.clips.map((c) => c.scene)).size).toBe(5);
+    expect(screen.getByRole('heading', { name: /Five recordings\.\s*Five separate clocks\./ })).toBeInTheDocument();
+    expect(screen.getAllByText('Not on a shared axis')).toHaveLength(5);
+    expect(screen.queryByLabelText('Shared scrubber')).toBeNull();
+    RECORDINGS.clips.forEach((c) => expect(screen.getByRole('button', { name: `Play ${c.name}` })).toBeInTheDocument());
   });
 });
 

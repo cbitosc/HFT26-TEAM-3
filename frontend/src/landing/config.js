@@ -35,6 +35,23 @@ export const MULTI_SOURCE = {
   ],
 };
 
+/*
+ * "Five recordings" section: five DIFFERENT real recordings from the ACCIDENT benchmark (CC BY-NC-SA 4.0), one per accident category the
+ * benchmark names. They come from different places and times, so none has a known relation to another and none is on a shared clock.
+ * Each is the first 12 s of its clip, re-encoded to 640 px wide H.264 without audio. The crash is not located in these windows.
+ */
+export const RECORDINGS = {
+  attribution: 'ACCIDENT benchmark, CC BY-NC-SA 4.0, accidentbench.github.io',
+  attributionUrl: 'https://accidentbench.github.io',
+  clips: [
+    { id: 'headon', name: 'Head-on', scene: 'Night intersection', src: '/demo/recordings/headon.mp4', poster: '/demo/recordings/headon.jpg' },
+    { id: 'rearend', name: 'Rear-end', scene: 'Daytime highway, overhead', src: '/demo/recordings/rearend.mp4', poster: '/demo/recordings/rearend.jpg' },
+    { id: 'sideswipe', name: 'Sideswipe', scene: 'Wet night street', src: '/demo/recordings/sideswipe.mp4', poster: '/demo/recordings/sideswipe.jpg' },
+    { id: 'single', name: 'Single-vehicle', scene: 'Night street corner', src: '/demo/recordings/single.mp4', poster: '/demo/recordings/single.jpg' },
+    { id: 'tbone', name: 'T-bone', scene: 'Daytime street', src: '/demo/recordings/tbone.mp4', poster: '/demo/recordings/tbone.jpg' },
+  ],
+};
+
 /** Existing route that creates an investigation (see App.jsx: <Route path="/new" element={<NewCase />} />). */
 export const START_ROUTE = '/new';
 
