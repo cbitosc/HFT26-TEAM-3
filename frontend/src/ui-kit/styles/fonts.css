@@ -1,0 +1,5 @@
+/* Optional: the kit's default faces. Install the packages (npm i @fontsource/anton @fontsource-variable/geist @fontsource-variable/geist-mono)
+   and import this file once, or load any fonts you like and override the families in your Tailwind config. */
+@import '@fontsource/anton';
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';

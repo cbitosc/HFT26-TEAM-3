@@ -1,0 +1,351 @@
+{
+  "run_at": "2026-10-30T18:47:06.736661+00:00",
+  "prompt_version": "witness-claims-v1",
+  "max_tokens": 1200,
+  "n_statements": 10,
+  "repeats": 3,
+  "models": {
+    "Qwen/Qwen3-14B +no_think": {
+      "n": 30,
+      "outcomes": {
+        "ok": 28,
+        "invalid_json": 2
+      },
+      "first_attempt_valid": 28,
+      "valid_and_all_quotes_verbatim": 28,
+      "median_ms": 3037,
+      "median_tokens_out": 177,
+      "mean_claims_when_valid": 2.29,
+      "runs": [
+        {
+          "status": 200,
+          "ms": 3182,
+          "finish": "stop",
+          "tokens_out": 177,
+          "chars": 711,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 2813,
+          "finish": "stop",
+          "tokens_out": 161,
+          "chars": 625,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 5980,
+          "finish": "stop",
+          "tokens_out": 155,
+          "chars": 602,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 3863,
+          "finish": "stop",
+          "tokens_out": 266,
+          "chars": 1040,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 3,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 2623,
+          "finish": "stop",
+          "tokens_out": 111,
+          "chars": 397,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 4129,
+          "finish": "stop",
+          "tokens_out": 279,
+          "chars": 1008,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 3,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 3157,
+          "finish": "stop",
+          "tokens_out": 81,
+          "chars": 300,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 1,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 2943,
+          "finish": "stop",
+          "tokens_out": 187,
+          "chars": 731,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 3817,
+          "finish": "stop",
+          "tokens_out": 156,
+          "chars": 587,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 4534,
+          "finish": "stop",
+          "tokens_out": 260,
+          "chars": 986,
+          "has_reasoning_field": false,
+          "outcome": "invalid_json",
+          "detail": "schema violation: claims.1.certainty: Input should be 'reported_as_direct_observ"
+        },
+        {
+          "status": 200,
+          "ms": 6770,
+          "finish": "stop",
+          "tokens_out": 156,
+          "chars": 606,
+          "has_reasoning_field": false,
+          "outcome": "invalid_json",
+          "detail": "schema violation: claims.0.certainty: Input should be 'reported_as_direct_observ"
+        },
+        {
+          "status": 200,
+          "ms": 8161,
+          "finish": "stop",
+          "tokens_out": 183,
+          "chars": 694,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 3,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 2702,
+          "finish": "stop",
+          "tokens_out": 155,
+          "chars": 602,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 3032,
+          "finish": "stop",
+          "tokens_out": 196,
+          "chars": 759,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 3,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 2287,
+          "finish": "stop",
+          "tokens_out": 104,
+          "chars": 371,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 4713,
+          "finish": "stop",
+          "tokens_out": 280,
+          "chars": 1011,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 3,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 1880,
+          "finish": "stop",
+          "tokens_out": 81,
+          "chars": 300,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 1,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 3037,
+          "finish": "stop",
+          "tokens_out": 187,
+          "chars": 731,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 2440,
+          "finish": "stop",
+          "tokens_out": 156,
+          "chars": 587,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 3340,
+          "finish": "stop",
+          "tokens_out": 260,
+          "chars": 985,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 4,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 2704,
+          "finish": "stop",
+          "tokens_out": 183,
+          "chars": 734,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 2503,
+          "finish": "stop",
+          "tokens_out": 161,
+          "chars": 625,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 2776,
+          "finish": "stop",
+          "tokens_out": 155,
+          "chars": 602,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 3426,
+          "finish": "stop",
+          "tokens_out": 264,
+          "chars": 1033,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 3,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 2760,
+          "finish": "stop",
+          "tokens_out": 104,
+          "chars": 371,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 5399,
+          "finish": "stop",
+          "tokens_out": 279,
+          "chars": 999,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 3,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 2104,
+          "finish": "stop",
+          "tokens_out": 81,
+          "chars": 300,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 1,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 2641,
+          "finish": "stop",
+          "tokens_out": 187,
+          "chars": 731,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 2649,
+          "finish": "stop",
+          "tokens_out": 156,
+          "chars": 587,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 3273,
+          "finish": "stop",
+          "tokens_out": 260,
+          "chars": 985,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 4,
+          "unlocatable": 0
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "run_at": "2026-10-30T18:36:41.954016+00:00",
+  "base_url": "https://api.featherless.ai/v1",
+  "models": {
+    "text": {
+      "id": "Qwen/Qwen3-14B",
+      "listed": true,
+      "concurrency_cost": 1,
+      "gated": false,
+      "context": 32768,
+      "price_in_per_mtok": 0.12,
+      "price_out_per_mtok": 0.24
+    },
+    "vision": {
+      "id": "Qwen/Qwen3-VL-8B-Instruct",
+      "listed": true,
+      "concurrency_cost": 1,
+      "gated": false,
+      "context": 32768,
+      "price_in_per_mtok": 0.1818,
+      "price_out_per_mtok": 1.3513000000000002
+    }
+  },
+  "checks": {
+    "text_plain": {
+      "status": 200,
+      "latency_ms": 4097,
+      "tokens_in": 94,
+      "tokens_out": 323,
+      "json_valid": true,
+      "think_tags": false,
+      "n_claims": 2,
+      "all_spans_verbatim": true
+    },
+    "text_json_object": {
+      "status": 200,
+      "latency_ms": 4730,
+      "tokens_in": 94,
+      "tokens_out": 1,
+      "json_valid": false,
+      "think_tags": false,
+      "error": "1 validation error for ClaimList\nclaims\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydant"
+    },
+    "vision_base64_png": {
+      "status": 200,
+      "latency_ms": 1344,
+      "tokens_in": 25,
+      "tokens_out": 1,
+      "answer_head": "red",
+      "says_red": true
+    },
+    "parallel_3_requests": {
+      "statuses": [
+        200,
+        200,
+        200
+      ],
+      "latency_ms": [
+        1777,
+        2861,
+        1821
+      ]
+    }
+  }
+}

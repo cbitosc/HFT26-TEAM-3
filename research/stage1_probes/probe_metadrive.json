@@ -1,0 +1,4 @@
+{
+  "render_ok": false,
+  "error": "AttributeError: 'NoneType' object has no attribute 'set_shader'"
+}

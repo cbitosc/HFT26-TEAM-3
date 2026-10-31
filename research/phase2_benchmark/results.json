@@ -1,0 +1,190 @@
+{
+  "machine": "macOS-27.0.1-arm64-arm-64bit",
+  "processor": "arm",
+  "torch": "2.15.0",
+  "mps": true,
+  "runs": [
+    {
+      "task": "detect",
+      "weights": "yolo26n.pt",
+      "device": "cpu",
+      "imgsz": 640,
+      "median_ms_per_frame": 15.9,
+      "sd_ms": 0.1,
+      "detected": {
+        "bus": 1,
+        "person": 3
+      }
+    },
+    {
+      "task": "detect",
+      "weights": "yolo26n.pt",
+      "device": "cpu",
+      "imgsz": 960,
+      "median_ms_per_frame": 28.7,
+      "sd_ms": 0.2,
+      "detected": {
+        "bus": 2,
+        "person": 3,
+        "truck": 1
+      }
+    },
+    {
+      "task": "detect",
+      "weights": "yolo26n.pt",
+      "device": "mps",
+      "imgsz": 640,
+      "median_ms_per_frame": 7.9,
+      "sd_ms": 0.4,
+      "detected": {
+        "bus": 1,
+        "person": 3
+      }
+    },
+    {
+      "task": "detect",
+      "weights": "yolo26n.pt",
+      "device": "mps",
+      "imgsz": 960,
+      "median_ms_per_frame": 9.9,
+      "sd_ms": 0.1,
+      "detected": {
+        "bus": 2,
+        "person": 3,
+        "truck": 1
+      }
+    },
+    {
+      "task": "detect",
+      "weights": "yolo26s.pt",
+      "device": "cpu",
+      "imgsz": 640,
+      "median_ms_per_frame": 31.6,
+      "sd_ms": 0.6,
+      "detected": {
+        "bus": 1,
+        "person": 3
+      }
+    },
+    {
+      "task": "detect",
+      "weights": "yolo26s.pt",
+      "device": "cpu",
+      "imgsz": 960,
+      "median_ms_per_frame": 57.6,
+      "sd_ms": 0.8,
+      "detected": {
+        "bus": 2,
+        "person": 3
+      }
+    },
+    {
+      "task": "detect",
+      "weights": "yolo26s.pt",
+      "device": "mps",
+      "imgsz": 640,
+      "median_ms_per_frame": 12.3,
+      "sd_ms": 0.4,
+      "detected": {
+        "bus": 1,
+        "person": 3
+      }
+    },
+    {
+      "task": "detect",
+      "weights": "yolo26s.pt",
+      "device": "mps",
+      "imgsz": 960,
+      "median_ms_per_frame": 19.7,
+      "sd_ms": 0.3,
+      "detected": {
+        "bus": 2,
+        "person": 3
+      }
+    },
+    {
+      "task": "detect",
+      "weights": "yolo26m.pt",
+      "device": "cpu",
+      "imgsz": 640,
+      "median_ms_per_frame": 63.4,
+      "sd_ms": 1.1,
+      "detected": {
+        "bus": 1,
+        "person": 3
+      }
+    },
+    {
+      "task": "detect",
+      "weights": "yolo26m.pt",
+      "device": "cpu",
+      "imgsz": 960,
+      "median_ms_per_frame": 121.5,
+      "sd_ms": 2.9,
+      "detected": {
+        "bus": 2,
+        "person": 3
+      }
+    },
+    {
+      "task": "detect",
+      "weights": "yolo26m.pt",
+      "device": "mps",
+      "imgsz": 640,
+      "median_ms_per_frame": 26.1,
+      "sd_ms": 6.5,
+      "detected": {
+        "bus": 1,
+        "person": 3
+      }
+    },
+    {
+      "task": "detect",
+      "weights": "yolo26m.pt",
+      "device": "mps",
+      "imgsz": 960,
+      "median_ms_per_frame": 46.9,
+      "sd_ms": 0.6,
+      "detected": {
+        "bus": 2,
+        "person": 3
+      }
+    },
+    {
+      "task": "detect+track",
+      "tracker": "bytetrack.yaml",
+      "device": "cpu",
+      "weights": "yolo26n.pt",
+      "frames": 60,
+      "ms_per_frame": 39.5,
+      "unique_track_ids": 6
+    },
+    {
+      "task": "detect+track",
+      "tracker": "bytetrack.yaml",
+      "device": "mps",
+      "weights": "yolo26n.pt",
+      "frames": 60,
+      "ms_per_frame": 11.3,
+      "unique_track_ids": 6
+    },
+    {
+      "task": "detect+track",
+      "tracker": "botsort.yaml",
+      "device": "cpu",
+      "weights": "yolo26n.pt",
+      "frames": 60,
+      "ms_per_frame": 19.5,
+      "unique_track_ids": 6
+    },
+    {
+      "task": "detect+track",
+      "tracker": "botsort.yaml",
+      "device": "mps",
+      "weights": "yolo26n.pt",
+      "frames": 60,
+      "ms_per_frame": 12.8,
+      "unique_track_ids": 6
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "id": "TD-V02-01",
+  "directory": "01-witness-matches",
+  "title": "Video 02 · witness matches visible events",
+  "designation": "mixed",
+  "video": "../video.mp4",
+  "video_synthetic": false,
+  "reviewed_fall": {
+    "actor_key": "A",
+    "start_ms": 2800,
+    "end_ms": 3500,
+    "uncertainty_ms": 400,
+    "note": "Human visual review: the motorcycle and rider fall during the first occurrence; contact and fault are not established."
+  },
+  "sensors": [
+    {
+      "key": "A",
+      "actor_key": "A",
+      "file": "../sensor_motorcycle.csv",
+      "synthetic": true,
+      "mapping": {
+        "t": "timestamp_s",
+        "speed": "speed_kmh",
+        "accel_long": "accel_long_mps2"
+      },
+      "units": {
+        "t": "s",
+        "speed": "km/h",
+        "accel_long": "m/s2"
+      },
+      "clock": "simulation"
+    }
+  ],
+  "witnesses": [
+    {
+      "key": "W01",
+      "label": "Demo witness · matching account",
+      "file": "witnesses/W01.txt",
+      "synthetic": true,
+      "claims": [
+        {
+          "quote": "I saw the motorcycle and rider fall in the traffic ahead.",
+          "char_start": 67,
+          "char_end": 124,
+          "actor_key": "A",
+          "fields": {
+            "subject": "Motorcycle A",
+            "action": "rider fall report",
+            "certainty": "reported_as_direct_observation",
+            "time_description": "approximate clip-relative interval",
+            "time_exactness": "approximate"
+          },
+          "time_anchor": {
+            "source_key": "video",
+            "start_ms": 2800,
+            "end_ms": 3500,
+            "uncertainty_ms": 400,
+            "basis": "Generated demo placement from clip-relative human review; not a real witness timestamp."
+          }
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "speed_conflicts": 0,
+    "sensor_gaps": 0,
+    "video_denial_conflicts": 0,
+    "demonstrates": "Matching generated account."
+  }
+}

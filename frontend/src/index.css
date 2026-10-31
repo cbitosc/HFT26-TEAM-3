@@ -1,0 +1,8 @@
+@import './ui-kit/styles/kit.css';
+@import './redesign.css';
+
+.tl-scroll { scrollbar-width: thin; }
+.mono { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-variant-numeric: tabular-nums; }
+
+/* A hidden tooltip anchored to the right-most topbar button can extend past a 360px viewport; clip it instead of creating a horizontal page scrollbar. */
+html { overflow-x: clip; }

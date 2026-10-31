@@ -1,0 +1,26 @@
+# secrets and local config
+.env
+.env.*
+!.env.example
+
+# data (never commit evidence, datasets, weights, or derived outputs)
+data/
+*.pt
+*.pth
+*.onnx
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# node (frontend, later)
+node_modules/
+dist/
+
+# os / editor
+.DS_Store
+.idea/
+.vscode/

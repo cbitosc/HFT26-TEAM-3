@@ -1,0 +1,8 @@
+# Detection and tracking. Torch is the CPU wheel. Install after requirements.txt:
+#   ./.venv/bin/pip install -r requirements-vision.txt
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.15.0+cpu
+torchvision==0.29.2+cpu
+ultralytics==8.4.193
+trackers==2.6.1
+supervision==0.31.3

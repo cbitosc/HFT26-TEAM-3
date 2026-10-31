@@ -1,0 +1,10 @@
+import { chromium } from 'playwright-core';
+const id = process.argv[2];
+const api = (p) => fetch(`http://localhost:8000/api/v1${p}`).then((r) => r.json());
+const tl = await api(`/cases/${id}/timeline`); const ev = Object.values(tl.lanes).flat();
+const strong = ev.filter((e) => (e.event_type === 'possible_collision' && (e.observations.abrupt_speed_changes || []).length) || (e.event_type === 'collision_flag' && e.source_type === 'sensor'));
+const b = await chromium.launch({ executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true, args: ['--autoplay-policy=no-user-gesture-required'] });
+const p = await b.newPage({ viewport: { width: 1440, height: 900 } }); await p.goto(`http://localhost:5173/reconstruction/${id}`); await p.waitForSelector('[aria-label="Accident alert settings"]', { timeout: 30000 }); await p.waitForTimeout(2500);
+await p.getByRole('button', { name: 'Play', exact: true }).click(); await p.waitForTimeout(9000);
+console.log(id, 'qualifying events:', strong.length, '| alert shown:', await p.locator('[role=alert][aria-label="Possible accident alert"]').isVisible(), '| video paused:', await p.locator('[data-primary] video').evaluate((v) => v.paused), '| weak/attention events present:', ev.filter((e) => ['possible_near_miss', 'potential_interaction', 'possible_collision'].includes(e.event_type)).length);
+await b.close();

@@ -1,0 +1,9 @@
+witness_id,label,record_origin,statement_file,statement_text
+W01,Demo witness 1 · contradicts visible fall,GENERATED_DEMO,witnesses/W01.txt,"GENERATED DEMO ACCOUNT — fictional witness, not actual testimony.
+
+The motorcycle never fell during the recording. The rider stayed seated on it throughout. Vehicle A was moving at about 85 km/h before the rider fell.
+"
+W02,Demo witness 2 · conflicting speed account,GENERATED_DEMO,witnesses/W02.txt,"GENERATED DEMO ACCOUNT — fictional witness, not actual testimony.
+
+Vehicle B was moving at about 75 km/h before the rider fell.
+"

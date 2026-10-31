@@ -1,0 +1,135 @@
+{
+  "id": "TD-V01-02",
+  "directory": "02-witness-conflicts",
+  "title": "Video 01 · witness conflicts with visible events",
+  "designation": "mixed",
+  "video": "../video.mp4",
+  "video_synthetic": false,
+  "reviewed_fall": {
+    "actor_key": "A",
+    "start_ms": 14400,
+    "end_ms": 14900,
+    "uncertainty_ms": 500,
+    "note": "Human visual review: the motorcycle and rider fall onto the road in this interval. Physical contact with another vehicle is not established."
+  },
+  "sensors": [
+    {
+      "key": "A",
+      "actor_key": "A",
+      "file": "sensors/vehicle_A.csv",
+      "synthetic": true,
+      "mapping": {
+        "t": "timestamp_s",
+        "speed": "speed_kmh",
+        "accel_long": "accel_long_mps2"
+      },
+      "units": {
+        "t": "s",
+        "speed": "km/h",
+        "accel_long": "m/s2"
+      },
+      "clock": "simulation"
+    },
+    {
+      "key": "B",
+      "actor_key": "B",
+      "file": "sensors/vehicle_B.csv",
+      "synthetic": true,
+      "mapping": {
+        "t": "timestamp_s",
+        "speed": "speed_kmh",
+        "accel_long": "accel_long_mps2"
+      },
+      "units": {
+        "t": "s",
+        "speed": "km/h",
+        "accel_long": "m/s2"
+      },
+      "clock": "simulation"
+    }
+  ],
+  "witnesses": [
+    {
+      "key": "W01",
+      "label": "Demo witness 1 · contradicts visible fall",
+      "file": "witnesses/W01.txt",
+      "synthetic": true,
+      "claims": [
+        {
+          "quote": "The motorcycle never fell during the recording. The rider stayed seated on it throughout.",
+          "char_start": 67,
+          "char_end": 156,
+          "actor_key": "A",
+          "fields": {
+            "subject": "Vehicle A",
+            "action": "denies rider fall",
+            "certainty": "reported_as_direct_observation",
+            "time_description": "approximate visual-review interval",
+            "time_exactness": "approximate"
+          },
+          "time_anchor": {
+            "source_key": "video",
+            "start_ms": 14400.0,
+            "end_ms": 18500.0,
+            "uncertainty_ms": 500,
+            "basis": "Generated demo placement based on approximate clip-relative visual review; not a real witness timestamp."
+          }
+        },
+        {
+          "quote": "Vehicle A was moving at about 85 km/h before the rider fell.",
+          "char_start": 157,
+          "char_end": 217,
+          "actor_key": "A",
+          "fields": {
+            "subject": "Vehicle A",
+            "action": "speed estimate",
+            "certainty": "reported_as_direct_observation",
+            "time_description": "before the rider fell",
+            "time_exactness": "approximate"
+          },
+          "time_anchor": {
+            "source_key": "video",
+            "start_ms": 12000,
+            "end_ms": 13500.0,
+            "uncertainty_ms": 500,
+            "basis": "Generated demo placement based on approximate clip-relative visual review; not a real witness timestamp."
+          }
+        }
+      ]
+    },
+    {
+      "key": "W02",
+      "label": "Demo witness 2 · conflicting speed account",
+      "file": "witnesses/W02.txt",
+      "synthetic": true,
+      "claims": [
+        {
+          "quote": "Vehicle B was moving at about 75 km/h before the rider fell.",
+          "char_start": 67,
+          "char_end": 127,
+          "actor_key": "B",
+          "fields": {
+            "subject": "Vehicle B",
+            "action": "speed estimate",
+            "certainty": "reported_as_direct_observation",
+            "time_description": "before the rider fell",
+            "time_exactness": "approximate"
+          },
+          "time_anchor": {
+            "source_key": "video",
+            "start_ms": 12000,
+            "end_ms": 13500.0,
+            "uncertainty_ms": 500,
+            "basis": "Generated demo placement based on approximate clip-relative visual review; not a real witness timestamp."
+          }
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "speed_conflicts": 2,
+    "sensor_gaps": 0,
+    "video_denial_conflicts": 1,
+    "demonstrates": "Generated witness denies the visible rider fall. Two additional speed claims conflict with unchanged simulated CSVs. Visual fall denial requires human review; numeric conflicts are rule-checked."
+  }
+}
