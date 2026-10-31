@@ -6,19 +6,31 @@ import { Alert, Badge, Button, Checkbox, Segmented } from '../ui-kit';
 import { useThrottledTime } from '../hooks';
 import { useWorkspace } from '../store';
 import { formatTime } from '../lib/time';
-import { basisNote, buildActors, dimsOf, involvedAt, pose, sceneBounds, withHeadings } from '../lib/scene3d';
+import { basisNote, buildActors, dimsOf, involvedAt, markerPct, pose, sceneBounds, withHeadings } from '../lib/scene3d';
 
 const COLORS = { car: 0x3b82f6, truck: 0x8b5cf6, bus: 0xf59e0b, motorcycle: 0x14b8a6, bicycle: 0x14b8a6, pedestrian: 0x94a3b8 };
 const INVOLVED = 0xdc2626;
 const VIEWS = [{ id: 'top', label: 'Top' }, { id: 'camera', label: 'Camera' }, { id: 'free', label: 'Free' }];
 
 function disposeTree(obj) {
-  obj.traverse((o) => { o.geometry?.dispose?.(); const m = o.material; if (Array.isArray(m)) m.forEach((x) => x.dispose()); else m?.dispose?.(); });
+  obj.traverse((o) => { o.geometry?.dispose?.(); const m = o.material; if (Array.isArray(m)) m.forEach((x) => { x.map?.dispose?.(); x.dispose(); }); else { m?.map?.dispose?.(); m?.dispose?.(); } });
+}
+
+/** A small text label that always faces the viewer. Drawn on a canvas, so it needs no font files. */
+function labelSprite(text) {
+  const c = document.createElement('canvas'); c.width = 448; c.height = 96;
+  const g = c.getContext('2d');
+  g.fillStyle = 'rgba(127, 29, 29, 0.92)'; g.beginPath(); g.roundRect?.(4, 4, 440, 88, 18); g.fill?.();
+  g.fillStyle = '#fff'; g.font = '600 34px ui-monospace, monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, 224, 50);
+  const tex = new THREE.CanvasTexture(c);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
+  sp.scale.set(10.5, 2.25, 1); sp.renderOrder = 10;
+  return sp;
 }
 
 /** Schematic 3D replay of the stored tracks of one camera. It follows the workspace clock (play, pause and seek here move the video too).
  *  Positions are estimated unless the camera is calibrated; the banner says which. Nothing is drawn that was not tracked. */
-export default function Incident3D({ trajs, evidenceId, video, moment, nameOf = (x) => x }) {
+export default function Incident3D({ trajs, evidenceId, video, moment, marks = [], nameOf = (x) => x }) {
   const mount = useRef(null);
   const api = useRef(null);
   const [failed, setFailed] = useState(false);
@@ -94,8 +106,12 @@ export default function Incident3D({ trajs, evidenceId, video, moment, nameOf = 
         line.userData = { trail: true }; a.dynamic.add(line);
       }
     });
+    if (moment && involved.at) {
+      const sp = labelSprite(`Accident ${formatTime(moment.ms)}`);
+      sp.position.set(-involved.at.x, 6, involved.at.z); sp.userData = { trail: true }; a.dynamic.add(sp);
+    }
     a.schedule();
-  }, [actors, involved, trails]);
+  }, [actors, involved, trails, moment]);
 
   // pose every actor for the current clock time
   useEffect(() => {
@@ -128,6 +144,8 @@ export default function Incident3D({ trajs, evidenceId, video, moment, nameOf = 
   const toggle = () => useWorkspace.getState().setPlaying(!playing);
   const seek = (ms) => { const st = useWorkspace.getState(); st.setPlaying(false); st.requestSeek(ms); };
   const hot = actors.filter((x) => involved.keys.has(x.key));
+  const allMarks = useMemo(() => { const m = [...marks]; if (moment && !m.some((x) => x.ms === moment.ms)) m.push({ ms: moment.ms, label: 'Strongest moment' }); return m.sort((a, b) => a.ms - b.ms); }, [marks, moment]);
+  const atMoment = !!moment && Math.abs(t - moment.ms) <= 700;
   const calibrated = actors.length > 0 && actors.every((x) => x.calibrated);
 
   return (
@@ -137,6 +155,14 @@ export default function Incident3D({ trajs, evidenceId, video, moment, nameOf = 
         <Badge variant={calibrated ? 'success' : 'warning'}>{calibrated ? 'calibrated positions' : 'schematic, estimated'}</Badge>
       </div>
       <Alert variant="warning" title={calibrated ? 'Drawn from stored tracks' : 'This is a schematic, not a measurement'}>{basisNote(actors, video)}</Alert>
+      {moment && (
+        <p className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-danger/40 bg-danger/5 px-3 py-2" aria-label="Accident timestamp">
+          <span className="mono text-[1.0625rem] font-semibold text-danger">{formatTime(moment.ms)}</span>
+          <span className="t-small text-fg">Possible accident (not confirmed){video?.name ? ` on ${video.name}` : ''}</span>
+          {atMoment && <Badge variant="danger">you are here</Badge>}
+          {allMarks.length > 1 && <span className="ml-auto flex flex-wrap items-center gap-1.5">{allMarks.map((m) => <Button key={m.ms} size="sm" variant="outline" onClick={() => seek(m.ms)}>{m.label} · {formatTime(m.ms)}</Button>)}</span>}
+        </p>
+      )}
       {failed ? (
         <p className="t-small mt-3 rounded-lg border border-line p-4 text-fg-3" role="status">The 3D view needs WebGL, which this browser or device could not start. The video, timeline and findings still work.</p>
       ) : (
@@ -144,9 +170,12 @@ export default function Incident3D({ trajs, evidenceId, video, moment, nameOf = 
           <div ref={mount} className="mt-3 h-[min(56vh,460px)] min-h-[280px] w-full overflow-hidden rounded-xl border border-line bg-[#1b2027]" role="img" aria-label="3D replay of the tracked vehicles and people" />
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <Button size="sm" variant="primary" icon={playing ? Pause : Play} onClick={toggle} aria-label={playing ? 'Pause' : 'Play'}>{playing ? 'Pause' : 'Play'}</Button>
-            <input type="range" aria-label="Replay position" className="min-w-[8rem] flex-1 accent-orange-500" min={span[0]} max={span[1]} step={50} value={Math.min(Math.max(t, span[0]), span[1])} onChange={(e) => seek(Number(e.target.value))} />
+            <div className="relative min-w-[8rem] flex-1">
+              <input type="range" aria-label="Replay position" className="w-full accent-orange-500" min={span[0]} max={span[1]} step={50} value={Math.min(Math.max(t, span[0]), span[1])} onChange={(e) => seek(Number(e.target.value))} />
+              {allMarks.map((m) => { const pct = markerPct(m.ms, span); return pct == null ? null : <i key={m.ms} title={`${m.label} ${formatTime(m.ms)}`} aria-hidden className="pointer-events-none absolute top-1/2 h-4 w-[3px] -translate-y-1/2 rounded bg-danger" style={{ left: `calc(${pct}% )` }} />; })}
+            </div>
             <span className="mono t-caption text-fg-3" aria-live="off">{formatTime(t)}</span>
-            {moment && <Button size="sm" variant="outline" icon={Crosshair} onClick={() => seek(moment.ms)}>Go to possible accident</Button>}
+            {moment && <Button size="sm" variant="outline" icon={Crosshair} onClick={() => seek(moment.ms)}>Go to possible accident · {formatTime(moment.ms)}</Button>}
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-4">
             <Segmented label="3D view" size="sm" value={view} onChange={setView} items={VIEWS} />

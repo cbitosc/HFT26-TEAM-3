@@ -136,3 +136,18 @@ export function basisNote(actors, video) {
   const cam = ASSUMED_CAMERA[video?.kind] || ASSUMED_CAMERA.cctv;
   return `Schematic only. This camera has no calibration, so positions are estimated from pixels assuming a camera ${cam.heightM} m high, tilted ${cam.tiltDeg}° down, with a ${cam.hfovDeg}° field of view over flat ground. Distances and speeds are not measurements.`;
 }
+
+/** Where a time falls along the replay slider, as a percentage, or null if it is outside the replay. */
+export function markerPct(ms, span) {
+  if (ms == null || !span || span[1] <= span[0] || ms < span[0] || ms > span[1]) return null;
+  return ((ms - span[0]) / (span[1] - span[0])) * 100;
+}
+
+/** Possible-accident flags of one recording grouped into incidents (flags within 2.5 s are one), earliest first. */
+export function accidentMarks(events = [], evidenceId, gapMs = 2500) {
+  const hits = events.filter((e) => e.event_type === 'possible_collision' && e.start_ms != null && (!evidenceId || e.source_id === evidenceId || e.evidence_id === evidenceId))
+    .map((e) => e.start_ms).sort((a, b) => a - b);
+  const marks = [];
+  hits.forEach((ms) => { const last = marks[marks.length - 1]; if (last && ms - last.endMs <= gapMs) last.endMs = ms; else marks.push({ ms, endMs: ms }); });
+  return marks.map((m, i) => ({ ms: m.ms, label: `Incident ${i + 1}` }));
+}

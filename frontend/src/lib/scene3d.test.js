@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ASSUMED_CAMERA, MAX_RANGE_M, basisNote, buildActors, involvedAt, makeGroundMapper, pose, positionAt, sceneBounds, withHeadings } from './scene3d';
+import { ASSUMED_CAMERA, MAX_RANGE_M, accidentMarks, basisNote, markerPct, buildActors, involvedAt, makeGroundMapper, pose, positionAt, sceneBounds, withHeadings } from './scene3d';
 
 const cam = { width: 1280, height: 720, ...ASSUMED_CAMERA.cctv };
 const traj = (id, pts, extra = {}) => ({ frame: 'image', track_ref: { evidence_id: 'ev1', track_id: id, class: 'car' }, points: pts, ...extra });
@@ -69,4 +69,19 @@ describe('basisNote', () => {
   it('says plainly when positions are estimated', () => expect(basisNote([{ calibrated: false }], { kind: 'dashcam' })).toMatch(/Schematic only.*1.3 m high.*not measurements/));
   it('says when there is nothing to draw', () => expect(basisNote([], {})).toMatch(/nothing to draw/));
   it('does not call estimated positions calibrated', () => expect(basisNote([{ calibrated: true }], {})).toMatch(/calibrated ground-plane/));
+});
+
+describe('accident timestamps on the replay', () => {
+  it('places a time along the slider and ignores times outside the replay', () => {
+    expect(markerPct(500, [0, 1000])).toBe(50);
+    expect(markerPct(2000, [0, 1000])).toBeNull();
+    expect(markerPct(null, [0, 1000])).toBeNull();
+    expect(markerPct(5, [10, 10])).toBeNull();
+  });
+  it('turns nearby possible-accident flags of one recording into one numbered incident', () => {
+    const ev = (ms, src = 'ev1', type = 'possible_collision') => ({ event_type: type, start_ms: ms, source_id: src });
+    expect(accidentMarks([ev(14800), ev(13200), ev(14000), ev(30000), ev(5000, 'ev2'), ev(1000, 'ev1', 'vehicle_slowing')], 'ev1'))
+      .toEqual([{ ms: 13200, label: 'Incident 1' }, { ms: 30000, label: 'Incident 2' }]);
+    expect(accidentMarks([], 'ev1')).toEqual([]);
+  });
 });

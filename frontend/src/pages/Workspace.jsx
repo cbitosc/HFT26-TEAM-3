@@ -35,6 +35,7 @@ import IncidentSequence from '../components/IncidentSequence';
 import CrashCuePanel, { useCueSummaries } from '../components/CrashCue';
 import InvestigationFindings from '../components/InvestigationFindings';
 import { Associations, CameraFilter, EventClocks, EventTrace, HypothesisExplanation, KeyObservations, Overlaps, PhaseInspector, Scenarios, SensorPanelNote, evidenceLabel, sourceName } from '../components/Reconstruction';
+import { accidentMarks } from '../lib/scene3d';
 const Incident3D = lazy(() => import('../components/Incident3D'));
 
 const NAV_KEY = 'traceline.nav';
@@ -340,7 +341,7 @@ export default function Workspace() {
           {view3dVideo && (
             <Panel as="section" className="mt-4 p-5" aria-label="3D reconstruction">
               <Suspense fallback={<p className="t-small text-fg-3" role="status">Loading the 3D view…</p>}>
-                <Incident3D trajs={data.trajs} evidenceId={view3dVideo.id} video={{ width: view3dVideo.video?.width, height: view3dVideo.video?.height, kind: view3dVideo.kind }} moment={moment} nameOf={nameOf} />
+                <Incident3D trajs={data.trajs} evidenceId={view3dVideo.id} video={{ width: view3dVideo.video?.width, height: view3dVideo.video?.height, kind: view3dVideo.kind }} moment={moment} marks={accidentMarks(events, view3dVideo.id)} nameOf={nameOf} />
               </Suspense>
             </Panel>
           )}
