@@ -12,7 +12,14 @@ export default function ReconstructionReadiness({ caseId, revision, onBuilt, com
     try { setData(await api.readiness(caseId)); setError(''); } catch (e) { setError(e.message); }
   }, [caseId]);
   useEffect(() => { load(); }, [load, revision]);
-  useEffect(() => { const id = setInterval(load, 6000); return () => clearInterval(id); }, [load]);
+  // Each check is a full backend round trip (remote database, shared tunnel): poll only while the tab is visible, and slowly once the case has settled.
+  const settled = !!data && data.can_build && !data.needs_update && !(data.failed_jobs?.length);
+  useEffect(() => {
+    const id = setInterval(() => { if (document.visibilityState === 'visible') load(); }, settled ? 30000 : 6000);
+    const onVisible = () => { if (document.visibilityState === 'visible') load(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVisible); };
+  }, [load, settled]);
   const build = async () => {
     setBusy(true); setError('');
     try {

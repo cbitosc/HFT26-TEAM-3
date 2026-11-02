@@ -1,8 +1,8 @@
 import { ChapterStrip, ThisMoment, storyChapters } from '../components/ReconstructionStory';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Alert, Badge, Button, Checkbox, Drawer, ErrorState, IconButton, LoadingState, SectionHeader, Select, Tabs, useToast } from '../ui-kit';
-import { FileText, Film, Gauge, PanelLeftClose, PanelLeftOpen, Users } from 'lucide-react';
+import { Alert, Badge, Button, Checkbox, Drawer, ErrorState, IconButton, LoadingState, ProgressBar, SectionHeader, Select, Tabs, useToast } from '../ui-kit';
+import { FileText, Film, Gauge, PanelLeftClose, PanelLeftOpen, Sparkles, Users } from 'lucide-react';
 import Shell from '../layout';
 import { api } from '../api';
 import { useWorkspace } from '../store';
@@ -28,6 +28,8 @@ import CaseBanner from '../components/CaseBanner';
 import CaseMeta from '../components/CaseMeta';
 import IncidentMoment, { MomentBar } from '../components/IncidentMoment';
 import { pickMoment } from '../lib/moment';
+import { accidentMarks } from '../lib/scene3d';
+const Incident3D = lazy(() => import('../components/Incident3D'));
 import { buildExecutive } from '../lib/executive';
 import { useAutoPause, useMotions } from '../hooks';
 import AccidentAlert from '../components/AccidentAlert';
@@ -68,6 +70,29 @@ function AutoPauseControls() {
   );
 }
 
+function aiNarrativeEvents(analysis) {
+  if (!analysis?.narrative?.events) return [];
+  return analysis.narrative.events.map((e) => ({
+    id: e.id, source_id: analysis.evidence_id, evidence_id: analysis.evidence_id,
+    start_ms: e.timestamp_ms, end_ms: e.end_ms, event_type: 'ai_visual_narrative',
+    category: 'machine_detection', title: e.description, synchronized: true,
+    uncertainty_ms: 600, uncertainty_basis: e.uncertainty,
+    observations: { ai_title: e.title, motion: e.motion, contact: e.contact, track_ids: e.track_ids },
+    confidence: { value: e.confidence, basis: 'Featherless narrative grounded to supplied YOLO tracks and sampled frames.' },
+    provenance: { generated_by: 'featherless', model: analysis.model },
+  })).sort(byStart);
+}
+
+function FeatherlessFindings({ items, onSeek }) {
+  if (!items?.length) return <p className="t-small text-fg-3">Featherless found no supported correlations, contradictions, or gaps.</p>;
+  const tone = { correlation: 'success', contradiction: 'danger', gap: 'warning' };
+  return <ul className="space-y-2">{items.map((f) => <li key={f.id} className="rounded-xl border border-line bg-surface-2/40 p-3">
+    <div className="flex flex-wrap items-start justify-between gap-2"><div><Badge variant={tone[f.type] || 'neutral'}>{f.type}</Badge><h3 className="t-small mt-2 font-medium text-fg">{f.title}</h3></div>{f.timestamp_ms != null && <Button size="sm" variant="outline" onClick={() => onSeek(f.timestamp_ms)}>{formatTime(f.timestamp_ms)}</Button>}</div>
+    <p className="t-small mt-2 text-fg-2">{f.explanation}</p>
+    <p className="t-caption mt-2 text-fg-3">{Math.round(f.confidence * 100)}% model confidence · {f.uncertainty || 'Review against the original evidence.'}</p>
+  </li>)}</ul>;
+}
+
 export default function Workspace() {
   const { caseId } = useParams();
   const toast = useToast();
@@ -77,6 +102,8 @@ export default function Workspace() {
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [labelBusy, setLabelBusy] = useState(false);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiElapsed, setAiElapsed] = useState(0);
   const showInspector = (id) => { setTab(id); setAdvancedOpen(true); };
   const [scenarios, setScenarios] = useState([]);
   const [scenarioId, setScenarioId] = useState(null);
@@ -97,13 +124,14 @@ export default function Workspace() {
   const load = useCallback(async (sid) => {
     try {
       setErr(null);
-      const [c, ev, actors, sc, jobs] = await Promise.all([api.case(caseId), api.evidence(caseId), api.actors(caseId), api.scenarios(caseId), api.jobs(caseId).catch(() => ({ items: [] }))]);
+      const aiRequest = api.featherlessAnalysis ? api.featherlessAnalysis(caseId).catch(() => ({ status: 'not_generated', analysis: null })) : Promise.resolve({ status: 'not_generated', analysis: null });
+      const [c, ev, actors, sc, jobs, ai] = await Promise.all([api.case(caseId), api.evidence(caseId), api.actors(caseId), api.scenarios(caseId), api.jobs(caseId).catch(() => ({ items: [] })), aiRequest]);
       setScenarios(sc.items);
       useCaseContext.getState().select(c);
       const videosEv = ev.items.filter((e) => e.kind === 'cctv' || e.kind === 'dashcam');
       const runs = Object.fromEntries(await Promise.all(videosEv.map(async (v) => [v.id, (await api.modelRuns(v.id).catch(() => ({ items: [] }))).items])));
       const chosen = sid || sc.items.find((s) => s.is_baseline)?.id || sc.items[0]?.id;
-      if (!chosen) return setData({ c, ev: ev.items, actors: actors.items, jobs: jobs.items, runs, none: true });
+      if (!chosen) return setData({ c, ev: ev.items, actors: actors.items, jobs: jobs.items, runs, ai, none: true });
       const [tl, cons, crbs, gaps, finds, trajs, seek0, inc, nar] = await Promise.all([
         api.timeline(caseId, chosen), api.contradictions(caseId, chosen), api.corroborations(caseId, chosen), api.gaps(caseId, chosen),
         api.findings(caseId, chosen), api.trajectories(caseId, chosen), api.seek(caseId, 0, chosen),
@@ -119,12 +147,24 @@ export default function Workspace() {
       setNarrative(nar);
       useWorkspace.getState().reset(caseId, chosen);
       setTab('overview');
-      setData({ c, ev: ev.items, actors: actors.items, jobs: jobs.items, runs, tl, cons: cons.items, crbs: crbs.items, gaps: gaps.items, finds: finds.items, trajs: trajs.items, seek0 });
+      setData({ c, ev: ev.items, actors: actors.items, jobs: jobs.items, runs, ai, tl, cons: cons.items, crbs: crbs.items, gaps: gaps.items, finds: finds.items, trajs: trajs.items, seek0 });
     } catch (e) { setErr(e); }
   }, [caseId]);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (!aiBusy) return undefined;
+    const started = Date.now();
+    setAiElapsed(0);
+    const timer = window.setInterval(() => setAiElapsed(Math.floor((Date.now() - started) / 1000)), 1000);
+    return () => window.clearInterval(timer);
+  }, [aiBusy]);
 
-  const events = useMemo(() => (data?.tl ? Object.values(data.tl.lanes).flat().sort(byStart) : []), [data]);
+  const baseEvents = useMemo(() => (data?.tl ? Object.values(data.tl.lanes).flat().sort(byStart) : []), [data]);
+  const aiAnalysis = data?.ai?.analysis;
+  const aiEvents = useMemo(() => aiNarrativeEvents(aiAnalysis), [aiAnalysis]);
+  // The timeline and key events always come from the stored events. The AI narrative is added beside them (chapters, scrubber markers); it never replaces them.
+  const events = baseEvents;
+  const selectableEvents = useMemo(() => (aiEvents.length ? [...baseEvents, ...aiEvents] : baseEvents), [baseEvents, aiEvents]);
   const shifts = useMemo(() => Object.fromEntries((data?.seek0?.targets || []).map((t) => [t.evidence_id, t.media_ms])), [data]);
   const videos = useMemo(() => (data?.ev || []).filter((e) => (e.kind === 'cctv' || e.kind === 'dashcam') && e.video?.playback_ready), [data]);
   const sensorEv = (data?.ev || []).find((e) => e.kind === 'sensor_csv');
@@ -136,26 +176,28 @@ export default function Workspace() {
     return m;
   }, [data]);
   const actorLabels = useMemo(() => Object.fromEntries((data?.actors || []).map((a) => [a.id, a.attributes?.ai_suggested_label || a.label])), [data]);
-  const model = useMemo(() => (data && !data.none ? buildModel({ events, unplaced: data.tl.unplaced, cons: data.cons, crbs: data.crbs, gaps: data.gaps, finds: data.finds, trajs: data.trajs, actors: data.actors, evidence: data.ev, modelRuns: data.runs, jobs: data.jobs, shifts }) : null), [data, events, shifts]);
+  const model = useMemo(() => (data && !data.none ? buildModel({ events: baseEvents, unplaced: data.tl.unplaced, cons: data.cons, crbs: data.crbs, gaps: data.gaps, finds: data.finds, trajs: data.trajs, actors: data.actors, evidence: data.ev, modelRuns: data.runs, jobs: data.jobs, shifts }) : null), [data, baseEvents, shifts]);
   const cues = useCueSummaries(videos, data?.runs);
   const keyEvents = useMemo(() => events.filter(isSignificant), [events]);
-  const moment = useMemo(() => (data && !data.none ? pickMoment(events, data.crbs) : null), [data, events]);
-  const placedEvents = useMemo(() => events.filter((e) => e.start_ms != null), [events]);
+  const moment = useMemo(() => (data && !data.none ? pickMoment(baseEvents, data.crbs) : null), [data, baseEvents]);
+  const view3dVideo = videos.find((v) => v.id === primaryId) || videos[0] || null;
+  const placedEvents = useMemo(() => baseEvents.filter((e) => e.start_ms != null), [baseEvents]);
   useAutoPause(placedEvents, `${scenarioId}:${primaryId}`);
   const alertState = useWorkspace((st) => st.alert);
   const alertEvent = alertState ? model?.events[alertState.eventId] : null;
   const alertCard = useMemo(() => (alertEvent && board ? board.strips.flatMap((st) => st.items).find((i) => i.event_id === alertEvent.id) : null), [alertEvent, board]);
   const motions = useMotions(moment, data?.trajs || []);
-  const executive = useMemo(() => (model ? buildExecutive({ model, moment, motions: motions || [], events, evidence: data.ev, actors: data.actors, trajs: data.trajs, gaps: data.gaps, nameOf: (id) => sourceName((data.ev || []).find((e) => e.id === id)) }) : null), [model, moment, motions, events, data]);
+  const executive = useMemo(() => (model ? buildExecutive({ model, moment, motions: motions || [], events: baseEvents, evidence: data.ev, actors: data.actors, trajs: data.trajs, gaps: data.gaps, nameOf: (id) => sourceName((data.ev || []).find((e) => e.id === id)) }) : null), [model, moment, motions, baseEvents, data]);
   useEffect(() => { useWorkspace.getState().setIncident(moment ? { ms: moment.ms, trackKeys: moment.trackKeys } : null); }, [moment]);
   const allVideos = useMemo(() => (data?.ev || []).filter((e) => e.kind === 'cctv' || e.kind === 'dashcam' || e.kind === 'other'), [data]);
   const nameOf = useCallback((id) => sourceName((data?.ev || []).find((e) => e.id === id)), [data]);
   const shown = useMemo(() => {
     const allOverlaps = data?.tl?.overlaps || [];
-    if (camera === 'all' || !data?.tl) return { tl: data?.tl, keyEvents, gaps: data?.gaps || [], overlaps: allOverlaps, items: incident?.items || [], unplaced: incident?.unplaced || [] };
+    const displayTl = data?.tl;
+    if (camera === 'all' || !data?.tl) return { tl: displayTl, keyEvents, gaps: data?.gaps || [], overlaps: allOverlaps, items: incident?.items || [], unplaced: incident?.unplaced || [] };
     const only = (e) => e.source_id === camera;
     return {
-      tl: { ...data.tl, lanes: Object.fromEntries(Object.entries(data.tl.lanes).map(([k, v]) => [k, v.filter(only)])) },
+      tl: { ...displayTl, lanes: Object.fromEntries(Object.entries(displayTl.lanes).map(([k, v]) => [k, v.filter(only)])) },
       keyEvents: keyEvents.filter(only),
       overlaps: allOverlaps.filter((o) => o.evidence_ids.includes(camera)),
       gaps: (data.gaps || []).filter((g) => g.scope?.evidence_id === camera),
@@ -238,12 +280,31 @@ export default function Workspace() {
   const suggestLabels = async () => {
     setLabelBusy(true);
     try {
-      const result = await api.suggestActorLabels(caseId);
+      const result = await withExternalConsent(() => api.suggestActorLabels(caseId));
       const actors = await api.actors(caseId);
       setData((current) => ({ ...current, actors: actors.items }));
       toast({ title: `${result.items.length} Featherless label suggestion${result.items.length === 1 ? '' : 's'} added`, description: 'Review these suggestions before confirming identity.', type: 'success' });
     } catch (e) { toast({ title: 'Could not generate Featherless labels', description: e.message, type: 'error' }); }
     finally { setLabelBusy(false); }
+  };
+  /** Runs `call`; if the case has not allowed external inference, asks once (this is what sends frames and evidence text to Featherless), enables it for this case and retries. */
+  const withExternalConsent = async (call) => {
+    try { return await call(); } catch (e) {
+      if (e.code !== 'EXTERNAL_INFERENCE_DISABLED') throw e;
+      const ok = window.confirm('This case does not allow external AI yet.\n\nTurning it on sends selected accident frames and the case\'s evidence text to Featherless AI (an outside service) to write the analysis. Nothing is sent otherwise.\n\nAllow it for this case?');
+      if (!ok) throw new Error('External AI stays off for this case, so no analysis was generated.');
+      await api.allowExternalInference(caseId);
+      return call();
+    }
+  };
+  const generateAiAnalysis = async () => {
+    setAiBusy(true);
+    try {
+      const result = await withExternalConsent(() => api.generateFeatherlessAnalysis(caseId));
+      setData((current) => ({ ...current, ai: result }));
+      toast({ title: 'Featherless narrative updated', description: 'Narration, simulated OBD, and evidence comparisons passed validation.', type: 'success' });
+    } catch (e) { toast({ title: 'Could not generate Featherless analysis', description: e.message, type: 'error' }); }
+    finally { setAiBusy(false); }
   };
 
   const crumbs = [{ label: data?.c?.title || 'Workspace' }];
@@ -256,8 +317,16 @@ export default function Workspace() {
   const reviewed = (data.finds || []).filter((f) => f.review_status === 'reviewed').length;
   const analysis = model?.overview.analysis;
 
-  const chapters = storyChapters(shown.keyEvents, moment?.eventId);
-  const momentEvent = model?.events[activeId] || (moment && model?.events[moment.eventId]) || chapters[0]?.event;
+  const chapters = aiEvents.length
+    ? aiEvents.slice(0, 6).map((event) => ({ label: event.observations.ai_title, event, active: event.id === activeId }))
+    : storyChapters(shown.keyEvents, moment?.eventId);
+  const momentEvent = selectableEvents.find((e) => e.id === activeId) || (moment && model?.events[moment.eventId]) || chapters[0]?.event;
+  const aiFindings = aiAnalysis?.findings || [];
+  const findingMarkers = aiFindings.filter((f) => f.timestamp_ms != null).map((f) => ({ id: f.id, source_id: aiAnalysis.evidence_id, start_ms: f.timestamp_ms, end_ms: f.timestamp_ms, event_type: `ai_${f.type}`, category: 'inference', title: f.title }));
+  const playerEvents = aiEvents.length ? [...baseEvents.filter(isSignificant), ...aiEvents, ...findingMarkers] : keyEvents;
+  const reviewCount = aiAnalysis ? aiFindings.length : (data.finds?.length || 0);
+  const aiProgress = aiElapsed < 10 ? 12 + aiElapsed : aiElapsed < 40 ? 22 + Math.round((aiElapsed - 10) * 1.2) : aiElapsed < 70 ? 58 + Math.round((aiElapsed - 40) * .8) : Math.min(94, 82 + Math.round((aiElapsed - 70) * .15));
+  const aiStage = aiElapsed < 10 ? 'Preparing YOLO-grounded frames' : aiElapsed < 40 ? 'Generating the visual narrative' : aiElapsed < 70 ? 'Creating simulated OBD records' : 'Comparing evidence for agreements and contradictions';
 
   const NavRail = data.none ? null : (
     <Panel as="nav" className="h-fit p-3" aria-label="Case navigation">
@@ -282,6 +351,7 @@ export default function Workspace() {
             </li>
           );
         })}
+        {aiAnalysis?.simulated_obd && <li><a href={api.featherlessObdUrl(caseId)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition hover:bg-surface-2"><Gauge className="h-4 w-4 shrink-0 text-fg-3" aria-hidden /><span className="min-w-0 flex-1"><span className="t-small block truncate text-fg">SIMULATED_Featherless_OBD.csv</span><span className="t-caption text-fg-3">sensor CSV · synthetic demo</span></span></a></li>}
       </ul>
       <div className="mb-1.5 mt-4 flex flex-wrap items-center justify-between gap-2"><h2 className="t-eyebrow flex items-center gap-1.5 text-fg-3"><Users className="h-3.5 w-3.5" aria-hidden />Vehicles and people</h2><Button size="sm" variant="outline" loading={labelBusy} onClick={suggestLabels}>Generate AI labels</Button></div>
       {data.actors.length === 0 ? <p className="t-caption text-fg-3">No identities confirmed.</p> : (
@@ -325,7 +395,7 @@ export default function Workspace() {
         <ErrorState title="No reconstruction yet" description="Review evidence setup above, then build a reconstruction." />
       ) : (
         <>
-          <section className="recon-summary" aria-label="Incident summary"><span className="t-eyebrow text-accent-text">INCIDENT SUMMARY</span><p>{executive?.sentences?.[0] || 'Review the recorded events and their evidence.'}</p><div className="flex flex-wrap gap-2"><Badge variant="neutral">{videos.length} recording{videos.length === 1 ? '' : 's'}</Badge><Badge variant="neutral">{data.finds.length} items to review</Badge><Badge variant="neutral">{eff.value}</Badge></div></section>
+          <section className="recon-summary" aria-label="Incident summary"><div className="flex flex-wrap items-center justify-between gap-2"><span className="t-eyebrow text-accent-text">INCIDENT SUMMARY</span><Button size="sm" variant="outline" icon={Sparkles} loading={aiBusy} onClick={generateAiAnalysis}>{aiAnalysis ? 'Refresh AI analysis' : 'Generate AI analysis'}</Button></div>{aiBusy && <div className="mt-4 rounded-xl border border-accent/20 bg-accent/5 p-4" role="status" aria-live="polite"><div className="mb-2 flex flex-wrap justify-between gap-2"><span className="t-small font-medium text-fg">{aiStage}</span><span className="mono t-caption text-fg-3">{aiElapsed}s elapsed</span></div><ProgressBar value={aiProgress} ariaLabel="Estimated Featherless analysis progress" size="sm" /><p className="t-caption mt-2 text-fg-3">Usually 30–90 seconds. The indicator may pause while Featherless responds.</p></div>}<p>{aiAnalysis?.narrative?.summary || executive?.sentences?.[0] || 'Review the recorded events and their evidence.'}</p><div className="flex flex-wrap gap-2">{aiAnalysis && <Badge variant="neutral">Featherless · YOLO grounded</Badge>}<Badge variant="neutral">{videos.length} recording{videos.length === 1 ? '' : 's'}</Badge><Badge variant="neutral">{reviewCount} items to review</Badge><Badge variant="neutral">{eff.value}</Badge></div></section>
           <div className="recon-focus-layout">
             <div className="recon-video-column">
               <Panel as="section" className="p-5" aria-label="Evidence video">
@@ -334,7 +404,7 @@ export default function Workspace() {
                                onResume={() => { const st = useWorkspace.getState(); st.setAlert(null); st.setPlaying(true); }} onDismiss={() => useWorkspace.getState().setAlert(null)} onSeekFrame={seekToFrame} />
                 <details className="recon-playback-options"><summary>Playback & alert settings</summary><div className="pt-3"><AutoPauseControls /><MomentBar moment={moment} /></div></details>
                 <CameraFilter videos={allVideos} value={camera} onChange={(id) => { setCamera(id); const v = videos.find((x) => x.id === id); if (v) useWorkspace.getState().setPrimaryVideo(id); }} />
-                <Player cues={cues} videos={videos} shifts={shifts} trackActors={trackActors} actorLabels={actorLabels} range={range} events={keyEvents} onSelectEvent={(e) => { pick(e); setTab('overview'); }} />
+                <Player cues={cues} videos={videos} shifts={shifts} trackActors={trackActors} actorLabels={actorLabels} range={range} events={playerEvents} onSelectEvent={(e) => { pick(e); setTab('overview'); }} />
                 <p className="t-caption mt-2 text-fg-3" title="Percentages on boxes are the detector's score for that box, not the chance of an event. Nothing is drawn between sampled frames.">Stored detections on sampled frames ({analysis ? ANALYSIS_LABEL[analysis.detection].toLowerCase() : ''}). Hover for what box labels mean.</p>
               </Panel>
               <ChapterStrip chapters={chapters} activeId={activeId} onPick={(e) => { pick(e); }} />
@@ -347,11 +417,19 @@ export default function Workspace() {
             <ThisMoment event={momentEvent} nameOf={nameOf} questions={executive?.questions} onPlay={pick} onDetails={(e) => { pick(e); showInspector('event'); }} onEvidence={(e) => { pick(e); showInspector('evidence'); }} />
           </div>
 
+          {view3dVideo && (
+            <Panel as="section" className="mt-4 p-5" aria-label="3D reconstruction">
+              <Suspense fallback={<p className="t-small text-fg-3" role="status">Loading the 3D view…</p>}>
+                <Incident3D trajs={data.trajs} evidenceId={view3dVideo.id} video={{ width: view3dVideo.video?.width, height: view3dVideo.video?.height, kind: view3dVideo.kind }} moment={moment} marks={accidentMarks(baseEvents, view3dVideo.id)} nameOf={nameOf} />
+              </Suspense>
+            </Panel>
+          )}
+
           <div className="recon-review-sections">
-          <details className="recon-disclosure"><summary><span>Key findings & open questions</span><small>{data.finds.length} items · conflicts, support & missing evidence</small></summary><div className="recon-disclosure-body">          <InvestigationFindings caseId={caseId} cons={data.cons} crbs={data.crbs} gaps={shown.gaps} finds={data.finds} events={[...events, ...data.tl.unplaced]} nameOf={nameOf} onReview={review} onSeek={seekTo} onPickEvent={pickById}
-                              onSeekMedia={(evId, ms) => { window.scrollTo({ top: 0, behavior: 'smooth' }); seekToFrame({ evidence_id: evId, time_ms: ms }); }} />
+          <details className="recon-disclosure"><summary><span>Key findings & open questions</span><small>{reviewCount} items · conflicts, support & missing evidence</small></summary><div className="recon-disclosure-body">{aiAnalysis ? <FeatherlessFindings items={aiFindings} onSeek={seekTo} /> : <InvestigationFindings caseId={caseId} cons={data.cons} crbs={data.crbs} gaps={shown.gaps} finds={data.finds} events={[...baseEvents, ...data.tl.unplaced]} nameOf={nameOf} onReview={review} onSeek={seekTo} onPickEvent={pickById}
+                              onSeekMedia={(evId, ms) => { window.scrollTo({ top: 0, behavior: 'smooth' }); seekToFrame({ evidence_id: evId, time_ms: ms }); }} />}
 </div></details>
-          <details className="recon-disclosure" onToggle={(e) => setSourcesOpen(e.currentTarget.open)}><summary><span>Sources & vehicles</span><small>Recordings, identities & evidence details</small></summary><div className="recon-disclosure-body">{NavRail}{sourcesOpen && <Evidence caseId={caseId} evidence={data.ev} />}</div></details>
+          <details className="recon-disclosure" onToggle={(e) => setSourcesOpen(e.currentTarget.open)}><summary><span>Sources & vehicles</span><small>Recordings, identities & evidence details</small></summary><div className="recon-disclosure-body">{NavRail}{aiAnalysis?.simulated_obd && <Alert title="Simulated OBD evidence">{aiAnalysis.simulated_obd.records.length} Featherless-generated demo records. This is synthetic evidence, not a vehicle measurement.</Alert>} {sourcesOpen && <Evidence caseId={caseId} evidence={data.ev} />}</div></details>
           <details className="recon-disclosure"><summary><span>Reconstruction assumptions</span><small>Compare scenarios & clock relations</small></summary><div className="recon-disclosure-body">          <Overlaps overlaps={shown.overlaps} nameOf={nameOf} onSeek={seekTo} />
           <Scenarios scenarios={scenarios} scenarioId={scenarioId} onSelect={(id) => load(id)} hypotheses={data.tl.hypotheses || []} completeness={complete} onPickEvent={pickById} />
 </div></details>

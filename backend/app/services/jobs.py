@@ -7,6 +7,7 @@ import contextvars
 import hashlib
 import json
 import statistics
+import time
 from collections import Counter
 from collections.abc import Callable
 from datetime import datetime, timezone
@@ -55,7 +56,14 @@ def publish_progress(fraction: float) -> None:
 
 
 def _progress_token(factory: sessionmaker[Session], job_id: str):
+    last = {"t": 0.0, "f": -1.0}
+
     def sink(fraction: float) -> None:
+        # a progress write is a full database round trip (slow when the database is remote): at most one per second or per 3%
+        now = time.monotonic()
+        if fraction < 0.99 and now - last["t"] < 1.0 and fraction - last["f"] < 0.03:
+            return
+        last["t"], last["f"] = now, fraction
         try:
             with factory() as ps:
                 ps.execute(update(ProcessingJob).where(
@@ -388,17 +396,18 @@ def handle_track(session: Session, settings: Settings, job: ProcessingJob) -> st
                                                                "continuation_candidates": [c for c in cands if t["track_id"] in (c["from_track"], c["to_track"])]}))
     # candidate events from the tracks (source media time); the accident cue is passed only as a weak note
     cue_run = _latest_run(session, ev, "accident_cue")
-    cues = []
+    cues, cue_boxes = [], []
     if cue_run is not None:
-        cues = [(f.time_ms, d.confidence) for d, f in session.execute(
-            select(Detection, ExtractedFrame).join(ExtractedFrame, ExtractedFrame.id == Detection.frame_id)
-            .where(Detection.model_run_id == cue_run.id)).all()]
+        for d, f in session.execute(select(Detection, ExtractedFrame).join(ExtractedFrame, ExtractedFrame.id == Detection.frame_id)
+                                    .where(Detection.model_run_id == cue_run.id)).all():
+            cues.append((f.time_ms, d.confidence))
+            cue_boxes.append((f.time_ms, [d.x1, d.y1, d.x2, d.y2], d.confidence, f.frame_no))
     steps = [b.time_ms - a.time_ms for a, b in zip(ordered, ordered[1:])]
     period_ms = float(statistics.median(steps)) if steps else 1000.0 / fps
     vevents = video_events.generate(
         [{"track_id": t["track_id"], "class": t["class"], "points": t["points"], "continuity": t["continuity"]} for t in tracks],
         kind=ev.kind, period_ms=period_ms,
-        video_duration_ms=float(vm.duration_ms) if vm and vm.duration_ms else float(ordered[-1].time_ms if ordered else 0), cues=cues)
+        video_duration_ms=float(vm.duration_ms) if vm and vm.duration_ms else float(ordered[-1].time_ms if ordered else 0), cues=cues, cue_boxes=cue_boxes)
     track_pk = {t["track_id"]: None for t in tracks}
     session.flush()
     for e in vevents:

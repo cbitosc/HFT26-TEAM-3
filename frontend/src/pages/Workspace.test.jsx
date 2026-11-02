@@ -13,7 +13,7 @@ vi.mock('../api', () => ({
     contradictions: vi.fn(), corroborations: vi.fn(), gaps: vi.fn(), findings: vi.fn(), trajectories: vi.fn(),
     seek: vi.fn(), incidentEvents: vi.fn(), incidentNarrative: vi.fn(), incidentFrames: vi.fn(), storyboard: vi.fn(), summary: vi.fn(),
     jobs: vi.fn(), modelRuns: vi.fn(), review: vi.fn(), associations: vi.fn(), completeness: vi.fn(), frames: vi.fn(), tracks: vi.fn(), addAssociation: vi.fn(),
-    overlays: vi.fn().mockResolvedValue({ items: [] }), streamUrl: (id) => `/api/v1/evidence/${id}/stream`,
+    overlays: vi.fn().mockResolvedValue({ items: [] }), featherlessAnalysis: vi.fn(), streamUrl: (id) => `/api/v1/evidence/${id}/stream`,
   },
 }));
 import { api } from '../api';
@@ -25,7 +25,8 @@ const items = [
   { id: 'evt_b', event_type: 'vehicle_slowing', display: 'neutral', title: 'South vehicle slows', start_ms: 4000, end_ms: 4200, evidence_id: 'ev_s', track_ids: [3], track_classes: ['car'] },
 ];
 
-function setup({ hypotheses, designation = 'real', evidence = [video('ev_n', 'North camera', { synthetic: designation === 'synthetic' }), video('ev_s', 'South camera', { synthetic: designation === 'synthetic' })], assoc = null, completeness = null, gaps = [], cons = [], scenarios, clocks, trace, overlaps, explanation, playable, shifts } = {}) {
+function setup({ hypotheses, designation = 'real', evidence = [video('ev_n', 'North camera', { synthetic: designation === 'synthetic' }), video('ev_s', 'South camera', { synthetic: designation === 'synthetic' })], assoc = null, completeness = null, gaps = [], cons = [], scenarios, clocks, trace, overlaps, explanation, playable, shifts , ai } = {}) {
+  api.featherlessAnalysis.mockResolvedValue(ai || { status: 'not_generated', analysis: null });
   api.cases.mockResolvedValue({ items: [] });
   api.case.mockResolvedValue({ id: 'case_1', title: 'Junction', code: 'TL-1', designation });
   api.evidence.mockResolvedValue({ items: evidence });
@@ -374,5 +375,30 @@ describe('a case with no reconstruction', () => {
     setup({ scenarios: [] });
     expect(await screen.findByText('No reconstruction yet')).toBeInTheDocument();
     expect(document.body.textContent).toMatch(/Review evidence setup/);
+  });
+});
+
+
+describe('the timeline does not change when an AI analysis exists', () => {
+  const ai = { status: 'ready', analysis: { case_id: 'case_1', scenario_id: 'scn_1', evidence_id: 'ev_n', model: 'Qwen/test', generated_by: 'featherless', witnesses: [], frames: [], findings: [], simulated_obd: null,
+    narrative: { summary: 'The AI sees steady traffic.', classification: 'ai_visual_narrative', events: [{ id: 'ai-video-1', timestamp_ms: 2000, end_ms: 2000, title: 'AI scene title', description: 'steady', track_ids: [3], motion: 'steady', contact: 'none_visible', confidence: 0.9, uncertainty: '' }] } } };
+  const timelineText = async (opts) => {
+    const { unmount } = setup(opts);
+    await screen.findByLabelText('Incident summary');
+    fireEvent.click(screen.getByText('Detailed timeline', { selector: 'span' }));
+    const text = screen.getByLabelText('Detailed timeline').textContent;
+    unmount();
+    return text;
+  };
+  it('lists the same stored events with and without an analysis; the AI events are added elsewhere, never swapped in', async () => {
+    const without = await timelineText();
+    const withAi = await timelineText({ ai });
+    expect(without).toContain('North vehicle slows');
+    expect(withAi).toBe(without);
+    expect(withAi).not.toContain('AI scene title');
+  });
+  it('still shows the AI narrative itself', async () => {
+    setup({ ai });
+    expect(await screen.findByText(/The AI sees steady traffic/)).toBeInTheDocument();
   });
 });

@@ -21,7 +21,7 @@ def new_id(prefix: str):
 
 @lru_cache
 def get_engine(url: str | None = None) -> Engine:
-    return create_engine(url or get_settings().database_url, pool_pre_ping=True, future=True)
+    return create_engine(url or get_settings().database_url, pool_pre_ping=True, pool_size=10, max_overflow=10, pool_recycle=300, connect_args={"prepare_threshold": None}, future=True)  # a page fires ~30 parallel requests; the default 5+10 timed out against a remote database
 
 
 def get_session_factory(url: str | None = None) -> sessionmaker[Session]:

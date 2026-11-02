@@ -10,12 +10,17 @@ import math
 
 import numpy as np
 
-VIDEO_EVENTS_VERSION = "2"
+from app.services import collision
+
+VIDEO_EVENTS_VERSION = "3"
 DEFAULTS = {"moving_rel_speed": 0.5, "stopped_rel_speed": 0.15, "stop_min_s": 1.0, "slow_drop": 0.5, "slow_window_s": 0.8,
             "turn_deg": 30.0, "turn_window_s": 1.6, "min_turn_rel_speed": 0.3, "maneuver_min_path_diag": 3.0,
             "interaction_iou": 0.05, "interaction_gap_diag": 0.08, "near_miss_gap_diag": 0.5, "collision_drop": 0.6,
-            "collision_lookahead_s": 0.8, "cue_window_s": 0.5, "cue_min_conf": 0.54, "entry_margin_s": 0.5,
-            "segment_gap_factor": 1.5}
+            "collision_lookahead_s": 0.8, "cue_window_s": 0.5, "cue_min_conf": 0.4, "entry_margin_s": 0.5,
+            "segment_gap_factor": 1.5, "common_slowdown_share": 0.5, "scene_cue_min_peak": None, "scene_cue_min_frames": 3, "scene_cue_gap_ms": 1200, "scene_cue_strong_peak": 0.85}
+
+# separates real crashes (peak 0.88-0.97) from the one false cue (0.71) on the six development clips; tuned on them, not validated
+DETR_SCENE_MIN_PEAK = 0.75
 
 
 def _diag(b) -> float:
@@ -125,8 +130,46 @@ def _collapse_overlapping(events: list[dict], join_ms: float) -> list[dict]:
     return out
 
 
+def _own_change(tr, spd, t0, p):
+    """An abrupt change of the track's own motion after t0: its image speed falls by collision_drop, or its heading turns sharply."""
+    pts = tr["points"]
+    if spd:
+        pre = [s for x, s in zip(pts, spd) if t0 - 1000 <= x["time_ms"] < t0]
+        post = [s for x, s in zip(pts, spd) if t0 <= x["time_ms"] <= t0 + 1000]
+        if pre and post and np.mean(pre) >= p["moving_rel_speed"] and np.mean(post[len(post) // 2:] or post) <= np.mean(pre) * (1 - p["collision_drop"]):
+            return {"track_id": tr["track_id"], "kind": "speed_drop", "before": round(float(np.mean(pre)), 2), "after": round(float(np.mean(post[len(post) // 2:] or post)), 2)}
+    before = [x for x in pts if t0 - 1000 <= x["time_ms"] <= t0]
+    after = [x for x in pts if t0 <= x["time_ms"] <= t0 + 1000]
+    if len(before) >= 3 and len(after) >= 3:
+        h1 = math.atan2(before[-1]["anchor"][1] - before[0]["anchor"][1], before[-1]["anchor"][0] - before[0]["anchor"][0])
+        h2 = math.atan2(after[-1]["anchor"][1] - after[0]["anchor"][1], after[-1]["anchor"][0] - after[0]["anchor"][0])
+        moved = math.hypot(before[-1]["anchor"][0] - before[0]["anchor"][0], before[-1]["anchor"][1] - before[0]["anchor"][1]) / max(_diag(before[0]["bbox"]), 1e-6)
+        turn = abs(_signed_turn(h1, h2))
+        if moved >= 0.3 and turn >= 45:
+            return {"track_id": tr["track_id"], "kind": "heading_change", "degrees": round(float(turn), 1)}
+    return None
+
+
+def _common_slowdown(tracks, sp_cache, skip, t0, p):
+    """Share of the other moving tracks whose image speed falls by collision_drop around t0, and how many were moving."""
+    moving = dropped = 0
+    for tr in tracks:
+        if tr["track_id"] in skip:
+            continue
+        spd = sp_cache.get(tr["track_id"])
+        if not spd:
+            continue
+        pts = tr["points"]
+        pre = [s for x, s in zip(pts, spd) if t0 - 1000 <= x["time_ms"] < t0]
+        post = [s for x, s in zip(pts, spd) if t0 + 200 <= x["time_ms"] <= t0 + 1000]
+        if len(pre) >= 2 and post and np.mean(pre) >= p["moving_rel_speed"]:
+            moving += 1
+            dropped += int(np.mean(post) <= np.mean(pre) * (1 - p["collision_drop"]))
+    return (dropped / moving if moving else 0.0), moving
+
+
 def generate(tracks: list[dict], *, kind: str, period_ms: float, video_duration_ms: float, cues: list[tuple[float, float]] | None = None,
-             overrides: dict | None = None) -> list[dict]:
+             cue_boxes: list | None = None, overrides: dict | None = None) -> list[dict]:
     """tracks: [{track_id, class, points:[{frame_no,time_ms,bbox,anchor,confidence}]}] -> candidate events (source media time)."""
     p = DEFAULTS | (overrides or {})
     moving_cam = kind == "dashcam"
@@ -247,25 +290,92 @@ def generate(tracks: list[dict], *, kind: str, period_ms: float, video_duration_
                 obs = {"relation": relation, "max_box_overlap_iou": round(max_iou, 3), "min_gap_in_diagonals": round(min_gap, 3),
                        "note": "image-space proximity or box overlap is not physical contact or distance"}
                 add("potential_interaction", "VID-INTER-01", "machine_detection", pa0, pa1, tids, obs, [a, b])
-                # abrupt change of either party around the interaction => collision candidate or near-miss candidate
-                t_a, t_b = pa0["time_ms"], pa1["time_ms"] + p["collision_lookahead_s"] * 1000
+                # a collision needs more than overlap: approach, arrest of the relative motion, staying together, shape change or a
+                # persistent cue (see app.services.collision). Overlap plus one track slowing is ordinary traffic and is not flagged.
+                # the contact moment is where the boxes actually touch, not where a wider proximity segment starts: score every touching
+                # frame as a candidate contact and keep the best supported one
+                touch = [fr for fr, iou_v, gap in seg if iou_v >= p["interaction_iou"] or gap <= p["interaction_gap_diag"]]
+                best = None
+                for fr in touch[:80]:
+                    t_c = fa[fr]["time_ms"]
+                    cand = collision.assess(fa, fb, t_c, min(pa1["time_ms"], t_c + 1000), cue_boxes, p)
+                    key = (collision.is_collision(cand["signals"]), cand.get("score", 0), -t_c)
+                    if best is None or key > best[0]:
+                        best = (key, cand, fr)
+                ev = best[1] if best else collision.assess(fa, fb, pa0["time_ms"], pa1["time_ms"], cue_boxes, p)
+                if best:
+                    # if most other tracks slow down in the same moment (the camera's own vehicle braking, a queue stopping), the pair's
+                    # slowdown says nothing about the pair: discount its arrest
+                    share, n_other = _common_slowdown(tracks, sp_cache, (a["track_id"], b["track_id"]), fa[best[2]]["time_ms"], p)
+                    ev["details"]["common_slowdown"] = {"share": round(float(share), 2), "other_tracks": int(n_other)}
+                    if n_other >= 3 and share >= p["common_slowdown_share"] and "arrest" in ev["signals"]:
+                        ev["signals"] = [x for x in ev["signals"] if x != "arrest"]
+                        ev["abrupt"] = None
+                    # relative motion that merely converges (one car merging into another's lane, following at the same pace) is not an
+                    # impact: at least one of the two must change its own motion abruptly
+                    own = [_own_change(tr, sp_cache.get(tr["track_id"]), fa[best[2]]["time_ms"], p) for tr in (a, b)]
+                    ev["details"]["own_motion_change"] = [o for o in own if o]
+                    if "arrest" in ev["signals"] and not any(o and (o["kind"] == "speed_drop" or "shape" in ev["signals"]) for o in own):
+                        ev["signals"] = [x for x in ev["signals"] if x != "arrest"]
+                        ev["abrupt"] = None
+                if best:
+                    pa0 = fa[best[2]]
+                # people touching people is not a road collision; at least one party must be a vehicle (pedestrian-vehicle contact stays possible)
+                hit = touching and collision.is_collision(ev["signals"]) and not (a["class"] == "pedestrian" and b["class"] == "pedestrian")
+                if p.get("_debug") is not None:
+                    p["_debug"].append({"tracks": [a["track_id"], b["track_id"]], "t0": pa0["time_ms"], "t1": pa1["time_ms"], "touching": touching, "max_iou": max_iou, "hit": hit, "ev": ev})
                 drops = []
-                for tr in (a, b):
-                    spd = sp_cache.get(tr["track_id"])
-                    if not spd:
-                        continue
-                    pts = tr["points"]
-                    pre = [s for x, s in zip(pts, spd) if t_a - 1000 <= x["time_ms"] < t_a]
-                    post = [s for x, s in zip(pts, spd) if t_a <= x["time_ms"] <= t_b]
-                    if pre and post and np.mean(pre) >= p["moving_rel_speed"] and np.mean(post[len(post) // 2:] or post) <= np.mean(pre) * (1 - p["collision_drop"]):
-                        drops.append({"track_id": tr["track_id"], "relative_speed_before": round(float(np.mean(pre)), 2),
-                                      "relative_speed_after": round(float(np.mean(post[len(post) // 2:] or post)), 2)})
-                if drops:
-                    cue_hits = [c for c in cues if t_a - p["cue_window_s"] * 1000 <= c[0] <= t_b + p["cue_window_s"] * 1000]
-                    etype = "possible_collision" if touching else "possible_near_miss"
-                    add(etype, "VID-COLL-01" if touching else "VID-NEAR-01", "machine_detection", pa0, pa1, tids,
-                        obs | {"relation": "box_overlap" if touching else "proximity", "abrupt_speed_changes": drops,
-                               "accident_cue_nearby": bool(cue_hits),
-                               "accident_cue_note": "the accident-cue model is a weak supporting signal and never decides this event"}, [a, b])
+                if ev["abrupt"]:
+                    drops = [{"track_id": a["track_id"], "paired_with": b["track_id"], "basis": "relative motion of the pair"} | ev["abrupt"]]
+                evidence = {"collision_signals": ev["signals"], "collision_score": ev.get("score", 0), "collision_details": ev["details"]}
+                cue_hits = [c for c in cues if pa0["time_ms"] - p["cue_window_s"] * 1000 <= c[0] <= pa1["time_ms"] + p["cue_window_s"] * 1000]
+                if hit:
+                    add("possible_collision", "VID-COLL-02", "machine_detection", pa0, pa1, tids,
+                        obs | evidence | {"relation": "box_overlap", "abrupt_speed_changes": drops, "accident_cue_nearby": bool(cue_hits),
+                                          "accident_cue_note": "the accident-cue model is a weak supporting signal and never decides this event"}, [a, b])
+                elif not touching and "approach" in ev["signals"] and "arrest" in ev["signals"]:
+                    add("possible_near_miss", "VID-NEAR-02", "machine_detection", pa0, pa1, tids,
+                        obs | evidence | {"relation": "proximity", "abrupt_speed_changes": drops, "accident_cue_nearby": bool(cue_hits),
+                                          "accident_cue_note": "the accident-cue model is a weak supporting signal and never decides this event"}, [a, b])
                 k = j + 1
-    return _collapse_overlapping(sorted(out, key=lambda e: (e["t_start_ms"], e["event_type"])), period_ms * p["segment_gap_factor"])
+    out = _collapse_overlapping(sorted(out, key=lambda e: (e["t_start_ms"], e["event_type"])), period_ms * p["segment_gap_factor"])
+    out += _scene_cue_events(cue_boxes or [], out, p, period_ms, moving_cam)
+    return sorted(out, key=lambda e: (e["t_start_ms"], e["event_type"]))
+
+
+def _scene_cue_events(cue_boxes, events, p, period_ms, moving_cam):
+    """A whole-scene accident cue (DETR) that is confident and lasts several sampled frames becomes a possible-accident event with no
+    tracks: the model says the frame looks like an accident scene, not which vehicles touched. It is a cue, never a confirmed collision."""
+    if p["scene_cue_min_peak"] is None or not cue_boxes:
+        return []
+    frames = {}
+    for c in cue_boxes:
+        t, conf, fno = c[0], c[2], (c[3] if len(c) > 3 else None)
+        cur = frames.get(t)
+        if cur is None or conf > cur[0]:
+            frames[t] = (conf, fno)
+    clusters = []
+    for t in sorted(frames):
+        if clusters and t - clusters[-1][-1] <= p["scene_cue_gap_ms"]:
+            clusters[-1].append(t)
+        else:
+            clusters.append([t])
+    out = []
+    for c in clusters:
+        peak = max(frames[t][0] for t in c)
+        if len(c) < p["scene_cue_min_frames"] or peak < p["scene_cue_min_peak"]:
+            continue
+        # the moment the cue first appears is the best estimate of when the scene began to look like an accident; the cue keeps firing on the wreckage
+        t0, t1 = c[0], c[-1]
+        motion = [e for e in events if e["event_type"] == "possible_collision" and e["t_end_ms"] >= t0 - 1000 and e["t_start_ms"] <= t1 + 1000]
+        out.append({
+            "event_type": "possible_collision", "rule_id": "VID-SCENE-01", "category": "machine_detection", "t_start_ms": t0, "t_end_ms": t1,
+            "uncertainty_ms": period_ms / 2,
+            "observations": {"relation": "accident_scene_cue", "track_ids": [], "coordinate_frame": "image_pixels", "relative_to_moving_camera": moving_cam,
+                             "scene_cue": {"model": "accident_detr", "peak_confidence": round(float(peak), 2), "frames": len(c), "first_ms": t0, "last_ms": t1,
+                                           "strength": "strong" if peak >= p["scene_cue_strong_peak"] else "moderate"},
+                             "motion_analysis_agrees": bool(motion),
+                             "note": "the model flags frames that look like an accident scene; it does not show which vehicles touched or the exact moment of contact"},
+            "source_ref": {"kind": "video_frames", "frames": [frames[t0][1], frames[t1][1]], "frame_times_ms": [t0, t1]},
+            "entity_hint": {"tracks": []}})
+    return out

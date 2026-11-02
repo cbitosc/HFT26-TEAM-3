@@ -105,9 +105,8 @@ function Processing({ c }) {
     setPhase('building');
     try {
       const ready = await api.readiness(c.id);
-      if (!ready.can_build || ready.checks.some(check => !check.ready)) { nav(`/evidence/${c.id}`); return; }
-      const scenario = await api.buildScenario(c.id, { name: 'Baseline' });
-      nav(scenario.build?.events ? `/reconstruction/${c.id}` : `/evidence/${c.id}`);
+      if (ready.can_build) await api.buildScenario(c.id, { name: 'Baseline' });
+      nav(`/reconstruction/${c.id}`);
     } catch (x) { built.current = false; setErr(x.message); setPhase('failed'); }
   }, [c.id, nav]);
   useEffect(() => { if (phase === 'ready') build(); }, [phase, build]);
