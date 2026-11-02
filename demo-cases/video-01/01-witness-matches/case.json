@@ -1,0 +1,115 @@
+{
+  "id": "TD-V01-01",
+  "directory": "01-witness-matches",
+  "title": "Video 01 · witness matches visible events",
+  "designation": "mixed",
+  "video": "../video.mp4",
+  "video_synthetic": false,
+  "reviewed_fall": {
+    "actor_key": "A",
+    "start_ms": 14400,
+    "end_ms": 14900,
+    "uncertainty_ms": 500,
+    "note": "Human visual review: the motorcycle and rider fall onto the road in this interval. Physical contact with another vehicle is not established."
+  },
+  "sensors": [
+    {
+      "key": "A",
+      "actor_key": "A",
+      "file": "sensors/vehicle_A.csv",
+      "synthetic": true,
+      "mapping": {
+        "t": "timestamp_s",
+        "speed": "speed_kmh",
+        "accel_long": "accel_long_mps2"
+      },
+      "units": {
+        "t": "s",
+        "speed": "km/h",
+        "accel_long": "m/s2"
+      },
+      "clock": "simulation"
+    },
+    {
+      "key": "B",
+      "actor_key": "B",
+      "file": "sensors/vehicle_B.csv",
+      "synthetic": true,
+      "mapping": {
+        "t": "timestamp_s",
+        "speed": "speed_kmh",
+        "accel_long": "accel_long_mps2"
+      },
+      "units": {
+        "t": "s",
+        "speed": "km/h",
+        "accel_long": "m/s2"
+      },
+      "clock": "simulation"
+    }
+  ],
+  "witnesses": [
+    {
+      "key": "W01",
+      "label": "Demo witness 1 · visible fall account",
+      "file": "witnesses/W01.txt",
+      "synthetic": true,
+      "claims": [
+        {
+          "quote": "I saw the motorcycle and rider fall onto the road. I could not determine whether any vehicles touched.",
+          "char_start": 67,
+          "char_end": 169,
+          "actor_key": "A",
+          "fields": {
+            "subject": "Vehicle A",
+            "action": "rider fall report",
+            "certainty": "reported_as_direct_observation",
+            "time_description": "approximate visual-review interval",
+            "time_exactness": "approximate"
+          },
+          "time_anchor": {
+            "source_key": "video",
+            "start_ms": 14400.0,
+            "end_ms": 14900.0,
+            "uncertainty_ms": 500,
+            "basis": "Generated demo placement based on approximate clip-relative visual review; not a real witness timestamp."
+          }
+        }
+      ]
+    },
+    {
+      "key": "W02",
+      "label": "Demo witness 2 · visible aftermath account",
+      "file": "witnesses/W02.txt",
+      "synthetic": true,
+      "claims": [
+        {
+          "quote": "The rider later got up and stood beside the fallen motorcycle while other traffic continued to pass.",
+          "char_start": 67,
+          "char_end": 167,
+          "actor_key": "A",
+          "fields": {
+            "subject": "Vehicle A",
+            "action": "rider aftermath report",
+            "certainty": "reported_as_direct_observation",
+            "time_description": "approximate visual-review interval",
+            "time_exactness": "approximate"
+          },
+          "time_anchor": {
+            "source_key": "video",
+            "start_ms": 16000,
+            "end_ms": 22600.0,
+            "uncertainty_ms": 500,
+            "basis": "Generated demo placement based on approximate clip-relative visual review; not a real witness timestamp."
+          }
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "speed_conflicts": 0,
+    "sensor_gaps": 0,
+    "video_denial_conflicts": 0,
+    "demonstrates": "Generated accounts describe the visible fall and later aftermath without inventing measured speeds or contact. No numeric speed conflict is expected."
+  }
+}

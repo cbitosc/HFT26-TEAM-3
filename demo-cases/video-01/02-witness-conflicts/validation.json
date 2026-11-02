@@ -1,0 +1,19 @@
+{
+  "valid_sensor_rows": {
+    "A": 227,
+    "B": 227
+  },
+  "sensor_events": {
+    "A": [
+      "hard_braking",
+      "stop"
+    ],
+    "B": [
+      "hard_braking",
+      "stop"
+    ]
+  },
+  "validated_speed_conflicts": 2,
+  "validated_sensor_gaps": 0,
+  "scope": "Sensor/claim rules only. Live video detections can produce additional uncertain findings; no video model outcome was injected."
+}

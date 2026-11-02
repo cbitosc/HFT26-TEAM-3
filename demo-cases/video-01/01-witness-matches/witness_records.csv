@@ -1,0 +1,9 @@
+witness_id,label,record_origin,statement_file,statement_text
+W01,Demo witness 1 · visible fall account,GENERATED_DEMO,witnesses/W01.txt,"GENERATED DEMO ACCOUNT — fictional witness, not actual testimony.
+
+I saw the motorcycle and rider fall onto the road. I could not determine whether any vehicles touched.
+"
+W02,Demo witness 2 · visible aftermath account,GENERATED_DEMO,witnesses/W02.txt,"GENERATED DEMO ACCOUNT — fictional witness, not actual testimony.
+
+The rider later got up and stood beside the fallen motorcycle while other traffic continued to pass.
+"

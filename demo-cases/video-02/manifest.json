@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "source_video": {
+    "file": "video.mp4",
+    "original_filename": "video-02.mp4",
+    "sha256": "f8b22b8e09b1136b236c2875fe51b6909119edd83e039b46dfd310c91158d399",
+    "duration_ms": 12645.167,
+    "fps": 30,
+    "frame_count": 395,
+    "width": 1296,
+    "height": 746,
+    "synthetic": false
+  },
+  "case_designation": "mixed",
+  "clock": {
+    "reference": "video",
+    "offset_ms": 0,
+    "bound_ms": 400,
+    "basis": "Simulated sensor time zero is clip start."
+  },
+  "actors": [
+    {
+      "key": "A",
+      "label": "Motorcycle A · involved in the visible fall",
+      "kind": "vehicle"
+    }
+  ],
+  "limitations": [
+    "The fall is visible around 2.8–3.5 s; exact contact, injury and fault are not established.",
+    "The single CSV and all witness text are generated demo evidence, not real measurements or testimony.",
+    "The latter portion includes a replay, so only the first occurrence is annotated."
+  ],
+  "cases": [
+    {
+      "id": "TD-V02-01",
+      "title": "Video 02 · witness matches visible events",
+      "manifest": "01-witness-matches/case.json"
+    },
+    {
+      "id": "TD-V02-02",
+      "title": "Video 02 · witness conflicts with visible events",
+      "manifest": "02-witness-conflicts/case.json"
+    }
+  ],
+  "collection_plan": {
+    "total_videos": 3,
+    "cases_per_video": 2,
+    "total_cases": 6,
+    "pair_rule": "Same video and same single simulated sensor CSV; only witness account changes."
+  }
+}

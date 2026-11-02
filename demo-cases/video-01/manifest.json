@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "source_video": {
+    "file": "video.mp4",
+    "original_filename": "WhatsApp Video 2026-10-31 at 12.01.55 AM.mp4",
+    "sha256": "a6b243e4ac04291faf5fc954b7756a78dd2b4d0872f3a6bdfdc6a6c85755f410",
+    "duration_ms": 22666.667,
+    "fps": 30,
+    "frame_count": 680,
+    "width": 1346,
+    "height": 712,
+    "synthetic": false
+  },
+  "case_designation": "mixed",
+  "clock": {
+    "reference": "video",
+    "offset_ms": 0,
+    "bound_ms": 500,
+    "basis": "Simulation time zero explicitly defined as clip start; not recovered hardware timestamps."
+  },
+  "actors": [
+    {
+      "key": "A",
+      "label": "Vehicle A · motorcycle involved in the visible fall",
+      "kind": "vehicle"
+    },
+    {
+      "key": "B",
+      "label": "Vehicle B · silver/white MPV beside the fallen motorcycle",
+      "kind": "vehicle"
+    }
+  ],
+  "limitations": [
+    "No calibrated distance or measured speed is available. All sensor values and witness accounts are generated demo assumptions.",
+    "The motorcycle/rider fall is visible around 14.4–14.9 s. The view does not conclusively establish vehicle-to-vehicle contact or fault.",
+    "Actor labels are demo identities, not automatic re-identification guarantees. Video tracks require review before confirmation.",
+    "No GPS, injury assessment, traffic-light state, or real collision flag is invented."
+  ],
+  "cases": [
+    {
+      "id": "TD-V01-01",
+      "title": "Video 01 · witness matches visible events",
+      "manifest": "01-witness-matches/case.json",
+      "validation": {
+        "valid_sensor_rows": {
+          "A": 227,
+          "B": 227
+        },
+        "sensor_events": {
+          "A": [
+            "hard_braking",
+            "stop"
+          ],
+          "B": [
+            "hard_braking",
+            "stop"
+          ]
+        },
+        "validated_speed_conflicts": 0,
+        "validated_sensor_gaps": 0,
+        "scope": "Sensor/claim rules only. Live video detections can produce additional uncertain findings; no video model outcome was injected."
+      }
+    },
+    {
+      "id": "TD-V01-02",
+      "title": "Video 01 · witness conflicts with visible events",
+      "manifest": "02-witness-conflicts/case.json",
+      "validation": {
+        "valid_sensor_rows": {
+          "A": 227,
+          "B": 227
+        },
+        "sensor_events": {
+          "A": [
+            "hard_braking",
+            "stop"
+          ],
+          "B": [
+            "hard_braking",
+            "stop"
+          ]
+        },
+        "validated_speed_conflicts": 2,
+        "validated_sensor_gaps": 0,
+        "scope": "Sensor/claim rules only. Live video detections can produce additional uncertain findings; no video model outcome was injected."
+      }
+    }
+  ],
+  "collection_plan": {
+    "total_videos": 3,
+    "cases_per_video": 2,
+    "total_cases": 6,
+    "pair_rule": "Same video and byte-identical simulated sensors; only witness accounts change."
+  }
+}

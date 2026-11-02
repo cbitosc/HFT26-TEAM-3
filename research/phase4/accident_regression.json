@@ -1,0 +1,26 @@
+{
+  "run_at": "2026-10-30T18:08:21.939747+00:00",
+  "model": "accident_yolov8s",
+  "weights_sha256": "2c75218e3acc597b93310a13af94b3472eb43e8bee852d81f3eefcbc9612f456",
+  "device": "mps",
+  "images": 154,
+  "ground_truth_boxes": 170,
+  "reference_ultralytics_val": {
+    "precision": 0.586,
+    "recall": 0.524,
+    "mAP50": 0.558
+  },
+  "baseline_stage1": {
+    "precision": 0.586,
+    "recall": 0.524,
+    "mAP50": 0.558
+  },
+  "our_path": {
+    "mAP50": 0.562,
+    "precision_at_0.25": 0.682,
+    "recall_at_0.25": 0.429
+  },
+  "our_path_agrees_with_reference": true,
+  "tolerance": 0.03,
+  "caveat": "model's own validation split (154 images, web-sourced, frames possibly shared with training): not real-world accident accuracy"
+}

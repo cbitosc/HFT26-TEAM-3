@@ -1,0 +1,609 @@
+{
+  "run_at": "2026-10-30T18:40:57.358192+00:00",
+  "prompt_version": "witness-claims-v1",
+  "max_tokens": 1200,
+  "n_statements": 10,
+  "repeats": 1,
+  "models": {
+    "Qwen/Qwen3-14B": {
+      "n": 10,
+      "outcomes": {
+        "ok": 4,
+        "empty": 4,
+        "invalid_json": 2
+      },
+      "first_attempt_valid": 4,
+      "valid_and_all_quotes_verbatim": 4,
+      "median_ms": 11414,
+      "median_tokens_out": 1200,
+      "mean_claims_when_valid": 2.25,
+      "runs": [
+        {
+          "status": 200,
+          "ms": 7481,
+          "finish": "stop",
+          "tokens_out": 700,
+          "chars": 713,
+          "has_reasoning_field": true,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 8002,
+          "finish": "stop",
+          "tokens_out": 812,
+          "chars": 784,
+          "has_reasoning_field": true,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 12509,
+          "finish": "length",
+          "tokens_out": 1200,
+          "chars": 0,
+          "has_reasoning_field": true,
+          "outcome": "empty"
+        },
+        {
+          "status": 200,
+          "ms": 8582,
+          "finish": "stop",
+          "tokens_out": 929,
+          "chars": 1015,
+          "has_reasoning_field": true,
+          "outcome": "ok",
+          "claims": 3,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 11468,
+          "finish": "stop",
+          "tokens_out": 1152,
+          "chars": 437,
+          "has_reasoning_field": true,
+          "outcome": "invalid_json",
+          "detail": "not valid JSON (Extra data)"
+        },
+        {
+          "status": 200,
+          "ms": 11786,
+          "finish": "length",
+          "tokens_out": 1200,
+          "chars": 0,
+          "has_reasoning_field": true,
+          "outcome": "empty"
+        },
+        {
+          "status": 200,
+          "ms": 11414,
+          "finish": "length",
+          "tokens_out": 1200,
+          "chars": 0,
+          "has_reasoning_field": true,
+          "outcome": "empty"
+        },
+        {
+          "status": 200,
+          "ms": 7620,
+          "finish": "stop",
+          "tokens_out": 685,
+          "chars": 731,
+          "has_reasoning_field": true,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 10850,
+          "finish": "length",
+          "tokens_out": 1200,
+          "chars": 682,
+          "has_reasoning_field": true,
+          "outcome": "invalid_json",
+          "detail": "not valid JSON (Unterminated string starting at)"
+        },
+        {
+          "status": 200,
+          "ms": 11466,
+          "finish": "length",
+          "tokens_out": 1200,
+          "chars": 0,
+          "has_reasoning_field": true,
+          "outcome": "empty"
+        }
+      ]
+    },
+    "Qwen/Qwen3-14B +no_think": {
+      "n": 10,
+      "outcomes": {
+        "ok": 10
+      },
+      "first_attempt_valid": 10,
+      "valid_and_all_quotes_verbatim": 10,
+      "median_ms": 2800,
+      "median_tokens_out": 183,
+      "mean_claims_when_valid": 2.3,
+      "runs": [
+        {
+          "status": 200,
+          "ms": 2714,
+          "finish": "stop",
+          "tokens_out": 183,
+          "chars": 734,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 2575,
+          "finish": "stop",
+          "tokens_out": 162,
+          "chars": 629,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 2451,
+          "finish": "stop",
+          "tokens_out": 155,
+          "chars": 602,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 3416,
+          "finish": "stop",
+          "tokens_out": 266,
+          "chars": 1040,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 3,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 2053,
+          "finish": "stop",
+          "tokens_out": 111,
+          "chars": 397,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 3421,
+          "finish": "stop",
+          "tokens_out": 279,
+          "chars": 1008,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 3,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 3393,
+          "finish": "stop",
+          "tokens_out": 81,
+          "chars": 300,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 1,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 2782,
+          "finish": "stop",
+          "tokens_out": 187,
+          "chars": 731,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 2800,
+          "finish": "stop",
+          "tokens_out": 138,
+          "chars": 515,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 3446,
+          "finish": "stop",
+          "tokens_out": 285,
+          "chars": 1074,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 4,
+          "unlocatable": 0
+        }
+      ]
+    },
+    "Qwen/Qwen2.5-14B-Instruct": {
+      "n": 10,
+      "outcomes": {
+        "ok": 10
+      },
+      "first_attempt_valid": 10,
+      "valid_and_all_quotes_verbatim": 7,
+      "median_ms": 6227,
+      "median_tokens_out": 141,
+      "mean_claims_when_valid": 2.1,
+      "runs": [
+        {
+          "status": 200,
+          "ms": 6474,
+          "finish": "stop",
+          "tokens_out": 118,
+          "chars": 534,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 6170,
+          "finish": "stop",
+          "tokens_out": 141,
+          "chars": 623,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 6227,
+          "finish": "stop",
+          "tokens_out": 122,
+          "chars": 523,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 5357,
+          "finish": "stop",
+          "tokens_out": 179,
+          "chars": 783,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 3,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 3220,
+          "finish": "stop",
+          "tokens_out": 105,
+          "chars": 431,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 7039,
+          "finish": "stop",
+          "tokens_out": 244,
+          "chars": 997,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 3,
+          "unlocatable": 1
+        },
+        {
+          "status": 200,
+          "ms": 2696,
+          "finish": "stop",
+          "tokens_out": 52,
+          "chars": 210,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 1,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 7045,
+          "finish": "stop",
+          "tokens_out": 121,
+          "chars": 542,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 5908,
+          "finish": "stop",
+          "tokens_out": 194,
+          "chars": 832,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 1
+        },
+        {
+          "status": 200,
+          "ms": 12715,
+          "finish": "stop",
+          "tokens_out": 281,
+          "chars": 1192,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 2
+        }
+      ]
+    },
+    "Qwen/Qwen2.5-7B-Instruct": {
+      "n": 10,
+      "outcomes": {
+        "invalid_json": 7,
+        "ok": 3
+      },
+      "first_attempt_valid": 3,
+      "valid_and_all_quotes_verbatim": 3,
+      "median_ms": 2992,
+      "median_tokens_out": 148,
+      "mean_claims_when_valid": 1.67,
+      "runs": [
+        {
+          "status": 200,
+          "ms": 4537,
+          "finish": "stop",
+          "tokens_out": 143,
+          "chars": 646,
+          "has_reasoning_field": false,
+          "outcome": "invalid_json",
+          "detail": "not valid JSON (Extra data)"
+        },
+        {
+          "status": 200,
+          "ms": 2992,
+          "finish": "stop",
+          "tokens_out": 180,
+          "chars": 782,
+          "has_reasoning_field": false,
+          "outcome": "invalid_json",
+          "detail": "not valid JSON (Extra data)"
+        },
+        {
+          "status": 200,
+          "ms": 3331,
+          "finish": "stop",
+          "tokens_out": 148,
+          "chars": 643,
+          "has_reasoning_field": false,
+          "outcome": "invalid_json",
+          "detail": "schema violation: claims.1.hedges: Input should be a valid list"
+        },
+        {
+          "status": 200,
+          "ms": 2981,
+          "finish": "stop",
+          "tokens_out": 181,
+          "chars": 800,
+          "has_reasoning_field": false,
+          "outcome": "invalid_json",
+          "detail": "schema violation: claims.0.claims: Extra inputs are not permitted"
+        },
+        {
+          "status": 200,
+          "ms": 2725,
+          "finish": "stop",
+          "tokens_out": 158,
+          "chars": 658,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 3536,
+          "finish": "stop",
+          "tokens_out": 265,
+          "chars": 1001,
+          "has_reasoning_field": false,
+          "outcome": "invalid_json",
+          "detail": "schema violation: claims.0.hedges.0: Input should be a valid string; claims.1.he"
+        },
+        {
+          "status": 200,
+          "ms": 5344,
+          "finish": "stop",
+          "tokens_out": 60,
+          "chars": 240,
+          "has_reasoning_field": false,
+          "outcome": "invalid_json",
+          "detail": "not valid JSON (Extra data)"
+        },
+        {
+          "status": 200,
+          "ms": 2463,
+          "finish": "stop",
+          "tokens_out": 129,
+          "chars": 580,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 2238,
+          "finish": "stop",
+          "tokens_out": 97,
+          "chars": 404,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 1,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 2145,
+          "finish": "stop",
+          "tokens_out": 90,
+          "chars": 379,
+          "has_reasoning_field": false,
+          "outcome": "invalid_json",
+          "detail": "not valid JSON (Extra data)"
+        }
+      ]
+    },
+    "Qwen/Qwen2.5-32B-Instruct": {
+      "n": 10,
+      "outcomes": {
+        "invalid_json": 2,
+        "ok": 8
+      },
+      "first_attempt_valid": 8,
+      "valid_and_all_quotes_verbatim": 7,
+      "median_ms": 6200,
+      "median_tokens_out": 129,
+      "mean_claims_when_valid": 2.38,
+      "runs": [
+        {
+          "status": 200,
+          "ms": 15847,
+          "finish": "stop",
+          "tokens_out": 120,
+          "chars": 541,
+          "has_reasoning_field": false,
+          "outcome": "invalid_json",
+          "detail": "not valid JSON (Extra data)"
+        },
+        {
+          "status": 200,
+          "ms": 4537,
+          "finish": "stop",
+          "tokens_out": 144,
+          "chars": 635,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 5250,
+          "finish": "stop",
+          "tokens_out": 129,
+          "chars": 564,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 7356,
+          "finish": "stop",
+          "tokens_out": 273,
+          "chars": 1072,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 3,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 6200,
+          "finish": "stop",
+          "tokens_out": 105,
+          "chars": 432,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 10352,
+          "finish": "stop",
+          "tokens_out": 280,
+          "chars": 1011,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 3,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 5113,
+          "finish": "stop",
+          "tokens_out": 101,
+          "chars": 403,
+          "has_reasoning_field": false,
+          "outcome": "invalid_json",
+          "detail": "not valid JSON (Extra data)"
+        },
+        {
+          "status": 200,
+          "ms": 4248,
+          "finish": "stop",
+          "tokens_out": 124,
+          "chars": 559,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 2,
+          "unlocatable": 0
+        },
+        {
+          "status": 200,
+          "ms": 3527,
+          "finish": "stop",
+          "tokens_out": 122,
+          "chars": 523,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 1,
+          "unlocatable": 1
+        },
+        {
+          "status": 200,
+          "ms": 9330,
+          "finish": "stop",
+          "tokens_out": 349,
+          "chars": 1346,
+          "has_reasoning_field": false,
+          "outcome": "ok",
+          "claims": 4,
+          "unlocatable": 0
+        }
+      ]
+    }
+  }
+}

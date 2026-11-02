@@ -1,0 +1,90 @@
+{
+  "id": "TD-V02-02",
+  "directory": "02-witness-conflicts",
+  "title": "Video 02 · witness conflicts with visible events",
+  "designation": "mixed",
+  "video": "../video.mp4",
+  "video_synthetic": false,
+  "reviewed_fall": {
+    "actor_key": "A",
+    "start_ms": 2800,
+    "end_ms": 3500,
+    "uncertainty_ms": 400,
+    "note": "Human visual review: the motorcycle and rider fall during the first occurrence; contact and fault are not established."
+  },
+  "sensors": [
+    {
+      "key": "A",
+      "actor_key": "A",
+      "file": "../sensor_motorcycle.csv",
+      "synthetic": true,
+      "mapping": {
+        "t": "timestamp_s",
+        "speed": "speed_kmh",
+        "accel_long": "accel_long_mps2"
+      },
+      "units": {
+        "t": "s",
+        "speed": "km/h",
+        "accel_long": "m/s2"
+      },
+      "clock": "simulation"
+    }
+  ],
+  "witnesses": [
+    {
+      "key": "W01",
+      "label": "Demo witness · conflicting account",
+      "file": "witnesses/W01.txt",
+      "synthetic": true,
+      "claims": [
+        {
+          "quote": "The motorcycle never fell during the recording. The rider stayed seated throughout.",
+          "char_start": 67,
+          "char_end": 150,
+          "actor_key": "A",
+          "fields": {
+            "subject": "Motorcycle A",
+            "action": "denies rider fall",
+            "certainty": "reported_as_direct_observation",
+            "time_description": "approximate clip-relative interval",
+            "time_exactness": "approximate"
+          },
+          "time_anchor": {
+            "source_key": "video",
+            "start_ms": 2800,
+            "end_ms": 4000,
+            "uncertainty_ms": 400,
+            "basis": "Generated demo placement from clip-relative human review; not a real witness timestamp."
+          }
+        },
+        {
+          "quote": "The motorcycle was moving at about 90 km/h before the incident.",
+          "char_start": 151,
+          "char_end": 214,
+          "actor_key": "A",
+          "fields": {
+            "subject": "Motorcycle A",
+            "action": "speed estimate",
+            "certainty": "reported_as_direct_observation",
+            "time_description": "approximate clip-relative interval",
+            "time_exactness": "approximate"
+          },
+          "time_anchor": {
+            "source_key": "video",
+            "start_ms": 1000,
+            "end_ms": 2400,
+            "uncertainty_ms": 400,
+            "basis": "Generated demo placement from clip-relative human review; not a real witness timestamp."
+          }
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "speed_conflicts": 1,
+    "sensor_gaps": 0,
+    "video_denial_conflicts": 1,
+    "demonstrates": "Generated denial conflicts with reviewed video; speed estimate conflicts with simulated sensor."
+  }
+}

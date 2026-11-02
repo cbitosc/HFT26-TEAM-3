@@ -1,0 +1,80 @@
+{
+  "designation": "SYNTHETIC scenarios; not a measure of real-world performance",
+  "detections": "model",
+  "scenarios": {
+    "A": {
+      "case_id": "case_c8e045cdd2c3",
+      "title": "Intersection collision",
+      "rules": {
+        "contradictions": {
+          "expected": [
+            "CON-ACTION-01"
+          ],
+          "got": [],
+          "missing": [
+            "CON-ACTION-01"
+          ],
+          "unexpected": []
+        },
+        "corroborations": {
+          "expected": [
+            "COR-BRAKE-01",
+            "COR-COLL-01",
+            "COR-MANEUVER-01"
+          ],
+          "got": [],
+          "missing": [
+            "COR-BRAKE-01",
+            "COR-COLL-01",
+            "COR-MANEUVER-01"
+          ],
+          "unexpected": []
+        },
+        "gaps": {
+          "expected": [
+            "untestable_claim"
+          ],
+          "got": [
+            "untestable_claim"
+          ],
+          "missing": [],
+          "unexpected": []
+        }
+      },
+      "all_expected_present": false,
+      "no_unexpected_findings": true,
+      "timing_errors": {
+        "contact_video_ms": {
+          "n": 0
+        },
+        "contact_sensor_ms": {
+          "n": 1,
+          "median": 30.0,
+          "p95": 30.0,
+          "max": 30.0
+        },
+        "hard_braking_onset_ms": {
+          "n": 1,
+          "median": 30.0,
+          "p95": 30.0,
+          "max": 30.0
+        }
+      },
+      "ground_plane_error_m": {
+        "n": 0
+      },
+      "build": {
+        "events": 9,
+        "contradictions": 0,
+        "corroborations": 0,
+        "gaps": 4,
+        "trajectories": 0,
+        "open_questions": 3,
+        "findings": 8,
+        "inferences": 1,
+        "sync_groups": 1,
+        "sync_inconsistencies": 0
+      }
+    }
+  }
+}

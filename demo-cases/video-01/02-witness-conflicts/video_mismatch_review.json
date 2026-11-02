@@ -1,0 +1,11 @@
+{
+  "claim": "The motorcycle never fell during the recording. The rider stayed seated on it throughout.",
+  "contradicted_by": {
+    "video": "../video.mp4",
+    "start_s": 14.4,
+    "end_s": 18.5,
+    "observation": "The motorcycle/rider falls, followed by the rider getting up near the motorcycle."
+  },
+  "classification": "Human visual-review comparison, not an automatic video-model finding.",
+  "automatic_check": "The two numeric speed conflicts are separately checked against the unchanged simulated CSVs."
+}

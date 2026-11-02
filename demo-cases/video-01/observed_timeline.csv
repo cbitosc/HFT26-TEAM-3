@@ -1,0 +1,7 @@
+start_s,end_s,classification,description
+0,13.9,direct_visual_review,Traffic moves towards the foreground; several vehicles can obscure the motorcycle.
+14.0,14.5,direct_visual_review,Motorcycle is close to other vehicles; view is partly occluded.
+14.4,14.9,direct_visual_review,Motorcycle/rider falls onto the road; exact contact mechanism is uncertain.
+15.0,15.7,direct_visual_review,Motorcycle is on its side and rider is down beside it; MPV is nearby.
+16.0,18.5,direct_visual_review,Rider gets up near the motorcycle.
+18.5,22.6,direct_visual_review,Rider remains near the motorcycle as traffic passes.

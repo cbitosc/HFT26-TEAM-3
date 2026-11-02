@@ -1,0 +1,58 @@
+[
+  {
+    "model": "RFDETRNano",
+    "device": "cpu",
+    "median_ms_per_frame": 43.7,
+    "detected": {
+      "bus": 1,
+      "person": 3
+    }
+  },
+  {
+    "model": "RFDETRNano",
+    "device": "mps",
+    "median_ms_per_frame": 29.3,
+    "detected": {
+      "bus": 1,
+      "person": 3
+    }
+  },
+  {
+    "model": "RFDETRSmall",
+    "device": "cpu",
+    "median_ms_per_frame": 72.7,
+    "detected": {
+      "bus": 1,
+      "person": 3
+    }
+  },
+  {
+    "model": "RFDETRSmall",
+    "device": "mps",
+    "median_ms_per_frame": 43.8,
+    "detected": {
+      "bus": 1,
+      "person": 3
+    }
+  },
+  {
+    "tracker": "ByteTrackTracker",
+    "tracker_only_ms_per_frame": 0.1,
+    "unique_track_ids": 5
+  },
+  {
+    "tracker": "BoTSORTTracker",
+    "tracker_only_ms_per_frame": 3.71,
+    "unique_track_ids": 5
+  },
+  {
+    "trackers_available": [
+      "BoTSORTTracker",
+      "ByteTrackTracker",
+      "CBIoUTracker",
+      "McByteTracker",
+      "OCSORTTracker",
+      "SORTTracker"
+    ]
+  }
+]

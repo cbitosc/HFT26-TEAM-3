@@ -1,0 +1,297 @@
+{
+  "designation": "SYNTHETIC scenarios; not a measure of real-world performance",
+  "detections": "oracle",
+  "scenarios": {
+    "A": {
+      "case_id": "case_e486280ba3b4",
+      "title": "Intersection collision",
+      "rules": {
+        "contradictions": {
+          "expected": [
+            "CON-ACTION-01"
+          ],
+          "got": [
+            "CON-ACTION-01"
+          ],
+          "missing": [],
+          "unexpected": []
+        },
+        "corroborations": {
+          "expected": [
+            "COR-BRAKE-01",
+            "COR-COLL-01",
+            "COR-MANEUVER-01"
+          ],
+          "got": [
+            "COR-BRAKE-01",
+            "COR-COLL-01",
+            "COR-MANEUVER-01"
+          ],
+          "missing": [],
+          "unexpected": []
+        },
+        "gaps": {
+          "expected": [
+            "untestable_claim"
+          ],
+          "got": [
+            "untestable_claim"
+          ],
+          "missing": [],
+          "unexpected": []
+        }
+      },
+      "all_expected_present": true,
+      "no_unexpected_findings": true,
+      "timing_errors": {
+        "contact_video_ms": {
+          "n": 1,
+          "median": 220.0,
+          "p95": 220.0,
+          "max": 220.0
+        },
+        "contact_sensor_ms": {
+          "n": 1,
+          "median": 30.0,
+          "p95": 30.0,
+          "max": 30.0
+        },
+        "hard_braking_onset_ms": {
+          "n": 1,
+          "median": 30.0,
+          "p95": 30.0,
+          "max": 30.0
+        }
+      },
+      "ground_plane_error_m": {
+        "n": 73,
+        "median": 0.0,
+        "p95": 0.0,
+        "max": 1.75
+      },
+      "build": {
+        "events": 19,
+        "contradictions": 1,
+        "corroborations": 3,
+        "gaps": 2,
+        "trajectories": 5,
+        "open_questions": 1,
+        "findings": 8,
+        "inferences": 1,
+        "sync_groups": 1,
+        "sync_inconsistencies": 0
+      }
+    },
+    "B": {
+      "case_id": "case_a8aaa1c89d7f",
+      "title": "Rear-end collision",
+      "rules": {
+        "contradictions": {
+          "expected": [],
+          "got": [],
+          "missing": [],
+          "unexpected": []
+        },
+        "corroborations": {
+          "expected": [
+            "COR-COLL-01"
+          ],
+          "got": [
+            "COR-BRAKE-01",
+            "COR-COLL-01"
+          ],
+          "missing": [],
+          "unexpected": [
+            "COR-BRAKE-01"
+          ]
+        },
+        "gaps": {
+          "expected": [
+            "untestable_claim"
+          ],
+          "got": [
+            "untestable_claim"
+          ],
+          "missing": [],
+          "unexpected": []
+        }
+      },
+      "all_expected_present": true,
+      "no_unexpected_findings": false,
+      "timing_errors": {
+        "contact_video_ms": {
+          "n": 1,
+          "median": 240.0,
+          "p95": 240.0,
+          "max": 240.0
+        },
+        "contact_sensor_ms": {
+          "n": 1,
+          "median": 10.0,
+          "p95": 10.0,
+          "max": 10.0
+        },
+        "hard_braking_onset_ms": {
+          "n": 1,
+          "median": 0.0,
+          "p95": 0.0,
+          "max": 0.0
+        }
+      },
+      "ground_plane_error_m": {
+        "n": 64,
+        "median": 0.0,
+        "p95": 0.167,
+        "max": 1.125
+      },
+      "build": {
+        "events": 19,
+        "contradictions": 0,
+        "corroborations": 2,
+        "gaps": 2,
+        "trajectories": 4,
+        "open_questions": 1,
+        "findings": 6,
+        "inferences": 1,
+        "sync_groups": 1,
+        "sync_inconsistencies": 0
+      }
+    },
+    "C": {
+      "case_id": "case_e0c48fbec0f1",
+      "title": "Pedestrian near miss",
+      "rules": {
+        "contradictions": {
+          "expected": [
+            "CON-COLL-CLAIM-01"
+          ],
+          "got": [
+            "CON-COLL-CLAIM-01"
+          ],
+          "missing": [],
+          "unexpected": []
+        },
+        "corroborations": {
+          "expected": [],
+          "got": [
+            "COR-BRAKE-01"
+          ],
+          "missing": [],
+          "unexpected": [
+            "COR-BRAKE-01"
+          ]
+        },
+        "gaps": {
+          "expected": [],
+          "got": [],
+          "missing": [],
+          "unexpected": []
+        }
+      },
+      "all_expected_present": true,
+      "no_unexpected_findings": false,
+      "timing_errors": {
+        "contact_video_ms": {
+          "n": 0
+        },
+        "contact_sensor_ms": {
+          "n": 0
+        },
+        "hard_braking_onset_ms": {
+          "n": 1,
+          "median": 30.0,
+          "p95": 30.0,
+          "max": 30.0
+        }
+      },
+      "ground_plane_error_m": {
+        "n": 86,
+        "median": 0.0,
+        "p95": 0.003,
+        "max": 0.925
+      },
+      "build": {
+        "events": 9,
+        "contradictions": 1,
+        "corroborations": 1,
+        "gaps": 0,
+        "trajectories": 4,
+        "open_questions": 0,
+        "findings": 2,
+        "inferences": 0,
+        "sync_groups": 1,
+        "sync_inconsistencies": 0
+      }
+    },
+    "D": {
+      "case_id": "case_3755de4f4d33",
+      "title": "Incomplete low-quality evidence",
+      "rules": {
+        "contradictions": {
+          "expected": [],
+          "got": [],
+          "missing": [],
+          "unexpected": []
+        },
+        "corroborations": {
+          "expected": [],
+          "got": [
+            "COR-MANEUVER-01"
+          ],
+          "missing": [],
+          "unexpected": [
+            "COR-MANEUVER-01"
+          ]
+        },
+        "gaps": {
+          "expected": [
+            "no_camera_calibration",
+            "sensor_missing_interval",
+            "video_missing_interval"
+          ],
+          "got": [
+            "low_visual_quality",
+            "no_camera_calibration",
+            "sensor_missing_interval",
+            "tracking_fragmentation",
+            "untestable_claim",
+            "video_missing_interval"
+          ],
+          "missing": [],
+          "unexpected": []
+        }
+      },
+      "all_expected_present": true,
+      "no_unexpected_findings": false,
+      "timing_errors": {
+        "contact_video_ms": {
+          "n": 0
+        },
+        "contact_sensor_ms": {
+          "n": 0
+        },
+        "hard_braking_onset_ms": {
+          "n": 1,
+          "median": 30.0,
+          "p95": 30.0,
+          "max": 30.0
+        }
+      },
+      "ground_plane_error_m": {
+        "n": 0
+      },
+      "build": {
+        "events": 15,
+        "contradictions": 0,
+        "corroborations": 1,
+        "gaps": 6,
+        "trajectories": 4,
+        "open_questions": 0,
+        "findings": 7,
+        "inferences": 0,
+        "sync_groups": 1,
+        "sync_inconsistencies": 0
+      }
+    }
+  }
+}
